@@ -12,7 +12,6 @@ import android.os.Bundle;
 import android.widget.TextView;
 
 import java.text.DecimalFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 
 import com.androidplot.series.XYSeries;
@@ -26,7 +25,6 @@ public class PressureMonitor extends Activity implements SensorEventListener {
 
 	private PressureData pressureData;
 	private XYSeries series1;
-	private long lastRead = 0;
 	
 	/** Called when the activity is first created. */
     @Override
@@ -65,12 +63,7 @@ public class PressureMonitor extends Activity implements SensorEventListener {
     }
     
     private void updateGraph()
-    {
-    	long now = System.currentTimeMillis();
-    	if (now - lastRead < 1000) {
-    		return;
-    	}
-    	
+    {    	
     	XYPlot plot = (XYPlot)this.findViewById(R.id.mySimpleXYPlot);
     	if (plot != null)
     	{
@@ -94,7 +87,6 @@ public class PressureMonitor extends Activity implements SensorEventListener {
     	}
     			
 		//Log.v("updateGraph", "time=" + (System.currentTimeMillis() - start));
-    	lastRead = System.currentTimeMillis();
     }
     
 	public void onAccuracyChanged(Sensor sensor, int accuracy) {
@@ -112,7 +104,7 @@ public class PressureMonitor extends Activity implements SensorEventListener {
         TextView minimumValueText = (TextView) findViewById(R.id.minimumReading);
         minimumValueText.setText(dec.format(pressureData.getMinimum()) + "\nmin");
         TextView currentValueText = (TextView) findViewById(R.id.currentReading);
-        currentValueText.setText(dec.format(currentValue) + "\n" + pressureData.getTendency());
+        currentValueText.setText(dec.format(currentValue) + "\n" + pressureData.getTrend());
         TextView maximumValueText = (TextView) findViewById(R.id.maximumReading);
     	maximumValueText.setText(dec.format(pressureData.getMaximum()) + "\nmax");
     	

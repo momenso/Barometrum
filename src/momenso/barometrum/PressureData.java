@@ -42,23 +42,34 @@ public class PressureData {
     	return data;
 	}
 	
-	public String getTendency()
+	public String getTrend()
     {
-    	float average = (minValue + maxValue) / 2;
-    	
-    	int above = 0, same = 0, below = 0;
+		// wait for a minimum reading samples
+		if (readingSamples.size() < 80) {
+			return "...";
+		}
+		
+		// calculates the slope of the trend line
+    	float sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+		float y = 0;
     	for (PressureDataPoint point : readingSamples) {
-    		if (point.getValue() > average) above++;
-    		if (point.getValue() == average) same++;
-    		if (point.getValue() < average) below++;
+    		float x = point.getValue();
+    		sumX += x;
+    		sumY += y;
+    		sumXY += x*y;
+    		sumX2 += x*x;
+    		y++;
     	}
     	
-    	if (above > same && above > below) {
-    		return "up";
-    	} else if (below > same && below > above) {
-    		return "down";
+    	float slope = (sumXY - sumX * sumY / y) / (sumX2 - (sumX * sumX) / y); 
+    	
+    	// assigns a trend
+    	if (slope > 3.5) {
+    		return "Up";
+    	} else if (slope < -3.5) {
+    		return "Down";
     	} else {
-    		return "stable";
+    		return "Stable";
     	}
     }
 	
