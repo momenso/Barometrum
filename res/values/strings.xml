@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pressureLoading">Loading...</string>
+    <string name="app_name">Barometrum</string>
+    <string name="minimumPressure">min</string>
+    <string name="maximumPressure">max</string>
+</resources>

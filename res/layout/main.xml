@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent">
+	<LinearLayout 
+		android:orientation="horizontal" 
+		android:layout_width="fill_parent"
+		android:layout_weight="1" android:layout_height="wrap_content">
+		<TextView 
+			android:layout_height="fill_parent" 
+			android:layout_width="10px"/>
+		<TextView
+			android:text="minimum" 
+			android:gravity="center|center_vertical"
+			android:layout_width="wrap_content"
+			android:layout_height="fill_parent" 
+			android:layout_weight="1"
+			android:background="#303030"
+			android:layout_margin="3px"
+			android:id="@+id/minimumReading" 
+			android:textSize="25sp" />
+		<TextView
+			android:text="@string/pressureLoading" 
+			android:gravity="center|center_vertical"
+			android:layout_width="wrap_content"
+			android:layout_height="fill_parent" 
+			android:layout_weight="1"
+			android:background="#303030"
+			android:layout_margin="3px"
+			android:id="@+id/currentReading" 
+			android:textSize="50sp" />
+		<TextView
+			android:text="maximum" 
+			android:gravity="center|center_vertical"
+			android:layout_width="wrap_content"
+			android:layout_height="fill_parent" 
+			android:layout_weight="1"
+			android:background="#303030"
+			android:layout_margin="3px"
+			android:id="@+id/maximumReading" 
+			android:textSize="25sp" />
+		<TextView 
+			android:layout_height="fill_parent" 
+			android:layout_width="10px"/>
+	</LinearLayout>
+	<com.androidplot.xy.XYPlot android:id="@+id/mySimpleXYPlot"
+    	android:layout_width="fill_parent"
+	    android:layout_marginTop="10px"
+	    android:layout_marginLeft="10px"
+	    android:layout_marginRight="10px"
+	    android:layout_height="550px"
+	    title="Barometric Pressure" />
+</LinearLayout>
