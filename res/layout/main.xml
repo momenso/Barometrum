@@ -10,33 +10,30 @@
 		<TextView 
 			android:layout_height="fill_parent" 
 			android:layout_width="10px"/>
-		<TextView
+		<momenso.barometrum.gui.CustomTextView
 			android:text="minimum" 
 			android:gravity="center|center_vertical"
 			android:layout_width="wrap_content"
 			android:layout_height="fill_parent" 
 			android:layout_weight="1"
-			android:background="#303030"
 			android:layout_margin="3px"
 			android:id="@+id/minimumReading" 
 			android:textSize="25sp" />
-		<TextView
+		<momenso.barometrum.gui.CustomTextView
 			android:text="@string/pressureLoading" 
 			android:gravity="center|center_vertical"
 			android:layout_width="wrap_content"
 			android:layout_height="fill_parent" 
 			android:layout_weight="1"
-			android:background="#303030"
 			android:layout_margin="3px"
 			android:id="@+id/currentReading" 
 			android:textSize="50sp" />
-		<TextView
+		<momenso.barometrum.gui.CustomTextView
 			android:text="maximum" 
 			android:gravity="center|center_vertical"
 			android:layout_width="wrap_content"
 			android:layout_height="fill_parent" 
 			android:layout_weight="1"
-			android:background="#303030"
 			android:layout_margin="3px"
 			android:id="@+id/maximumReading" 
 			android:textSize="25sp" />
