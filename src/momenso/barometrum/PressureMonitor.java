@@ -24,13 +24,8 @@ import com.androidplot.xy.SimpleXYSeries;
 
 public class PressureMonitor extends Activity implements SensorEventListener {
 
-	private ArrayList<PressureDataPoint> readingSamples = new ArrayList<PressureDataPoint>();
-	private long eventTime;
+	private PressureData pressureData;
 	private XYSeries series1;
-	private float minValue = Float.MAX_VALUE;
-	private float maxValue = Float.MIN_VALUE;
-	private float average;
-	private String tendency;
 	private long lastRead = 0;
 	
 	/** Called when the activity is first created. */
@@ -39,7 +34,7 @@ public class PressureMonitor extends Activity implements SensorEventListener {
     	super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
         
-        eventTime = System.currentTimeMillis();
+        pressureData = new PressureData();
         
         registerSensor();
         initializeGraph();
@@ -69,40 +64,12 @@ public class PressureMonitor extends Activity implements SensorEventListener {
     	}
     }
     
-    private void updateGraph(float pressureValue)
+    private void updateGraph()
     {
     	long now = System.currentTimeMillis();
-    	if (now - lastRead < 2000)
-    	{
+    	if (now - lastRead < 1000) {
     		return;
     	}
-    	
-    	if (readingSamples.size() > 100)
-    	{
-    		readingSamples.remove(0);
-    	}
-    	
-    	PressureDataPoint newSample = new PressureDataPoint(
-    			(System.currentTimeMillis() - eventTime),
-    			pressureValue);
-    	readingSamples.add(newSample);
-    	
-    	PressureDataPoint[] values = readingSamples.toArray(new PressureDataPoint[0]);
-    	Number[] data = new Number[values.length];
-    	int i = 0;
-    	for (PressureDataPoint m : values) {
-    		data[i++] = m.getValue();
-    	}
-    	
-    	average = (minValue + maxValue) / 2; 
-    	
-    	if (pressureValue > average) {
-    		tendency = "up";
-    	} else if (pressureValue == average) {
-    		tendency = "stable";
-    	} else {
-    		tendency = "down";
-    	}    	
     	
     	XYPlot plot = (XYPlot)this.findViewById(R.id.mySimpleXYPlot);
     	if (plot != null)
@@ -110,18 +77,18 @@ public class PressureMonitor extends Activity implements SensorEventListener {
     		plot.removeSeries(series1);
     		
     		series1 = new SimpleXYSeries(
-			        Arrays.asList(data),
+			        Arrays.asList(pressureData.get()),
 			        SimpleXYSeries.ArrayFormat.Y_VALS_ONLY,
 					"Air Pressure");
 			 		
-			LineAndPointFormatter series1Format = new LineAndPointFormatter(
-			            Color.rgb(0, 255, 0),                   // line color
+			LineAndPointFormatter series1Format = 
+				new LineAndPointFormatter(
+			            Color.rgb(0, 255, 0),          // line color
 			            Color.GREEN,                   // point color
-			            Color.TRANSPARENT);              // fill color (optional)
+			            Color.TRANSPARENT);            // fill color (optional)
 			
 			plot.addSeries(series1, series1Format);
-			
-			plot.setRangeBoundaries(minValue, maxValue, BoundaryMode.FIXED);
+			plot.setRangeBoundaries(pressureData.getMinimum(), pressureData.getMaximum(), BoundaryMode.FIXED);
 			
 			plot.redraw();
     	}
@@ -136,23 +103,20 @@ public class PressureMonitor extends Activity implements SensorEventListener {
 
 	public void onSensorChanged(SensorEvent event) {
     	
-        float currentValue = event.values[0];
-        if (currentValue > maxValue)
-        	maxValue = currentValue;
-        if (currentValue < minValue)
-        	minValue = currentValue;
+		float currentValue = event.values[0];
+		pressureData.add(currentValue);
         
         DecimalFormat dec = new DecimalFormat("0.00");
     	//String value = String.valueOf(dec.format(currentValue));
         
         TextView minimumValueText = (TextView) findViewById(R.id.minimumReading);
-        minimumValueText.setText(dec.format(minValue) + "\nmin");
+        minimumValueText.setText(dec.format(pressureData.getMinimum()) + "\nmin");
         TextView currentValueText = (TextView) findViewById(R.id.currentReading);
-        currentValueText.setText(dec.format(currentValue) + "\n" + tendency);
+        currentValueText.setText(dec.format(currentValue) + "\n" + pressureData.getTendency());
         TextView maximumValueText = (TextView) findViewById(R.id.maximumReading);
-    	maximumValueText.setText(dec.format(maxValue) + "\nmax");
+    	maximumValueText.setText(dec.format(pressureData.getMaximum()) + "\nmax");
     	
-    	updateGraph(event.values[0]);
+    	updateGraph();
 	}
 	
 	@Override
