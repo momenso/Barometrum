@@ -10,15 +10,30 @@
 		<TextView 
 			android:layout_height="fill_parent" 
 			android:layout_width="10px"/>
-		<momenso.barometrum.gui.CustomTextView
-			android:text="minimum" 
-			android:gravity="center|center_vertical"
+		<LinearLayout
+			android:orientation="vertical"
+			android:layout_height="fill_parent"
 			android:layout_width="wrap_content"
-			android:layout_height="fill_parent" 
-			android:layout_weight="1"
-			android:layout_margin="3px"
-			android:id="@+id/minimumReading" 
-			android:textSize="25sp" />
+			android:layout_weight="1">
+			<momenso.barometrum.gui.CustomTextView
+				android:text="maximum" 
+				android:gravity="center|center_vertical"
+				android:layout_width="fill_parent"
+				android:layout_height="fill_parent" 
+				android:layout_weight="1"
+				android:layout_margin="3px"
+				android:id="@+id/maximumReading" 
+				android:textSize="20sp" />
+			<momenso.barometrum.gui.CustomTextView
+				android:text="minimum" 
+				android:gravity="center|center_vertical"
+				android:layout_width="fill_parent"
+				android:layout_height="fill_parent" 
+				android:layout_weight="1"
+				android:layout_margin="3px"
+				android:id="@+id/minimumReading" 
+				android:textSize="20sp" />
+		</LinearLayout>
 		<momenso.barometrum.gui.CustomTextView
 			android:text="@string/pressureLoading" 
 			android:gravity="center|center_vertical"
@@ -28,14 +43,20 @@
 			android:layout_margin="3px"
 			android:id="@+id/currentReading" 
 			android:textSize="50sp" />
+		<ImageView 
+			android:id="@+id/arrowImage" 
+			android:src="@drawable/arrow"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_gravity="center|center_vertical"/>
 		<momenso.barometrum.gui.CustomTextView
-			android:text="maximum" 
+			android:text="..." 
 			android:gravity="center|center_vertical"
 			android:layout_width="wrap_content"
 			android:layout_height="fill_parent" 
 			android:layout_weight="1"
 			android:layout_margin="3px"
-			android:id="@+id/maximumReading" 
+			android:id="@+id/altitudeReading" 
 			android:textSize="25sp" />
 		<TextView 
 			android:layout_height="fill_parent" 

@@ -7,6 +7,7 @@ public class PressureData {
 	private long eventTime;
 	private float minValue = Float.MAX_VALUE;
 	private float maxValue = Float.MIN_VALUE;
+	private float average = 0;
 
 	public PressureData() {
 		readingSamples = new ArrayList<PressureDataPoint>();
@@ -42,11 +43,11 @@ public class PressureData {
     	return data;
 	}
 	
-	public String getTrend()
+	public float getTrend()
     {
 		// wait for a minimum reading samples
-		if (readingSamples.size() < 80) {
-			return "...";
+		if (readingSamples.size() < 10) {
+			return 0;
 		}
 		
 		// calculates the slope of the trend line
@@ -60,9 +61,11 @@ public class PressureData {
     		sumX2 += x*x;
     		y++;
     	}
+
+    	average = sumX / readingSamples.size();
     	
     	float slope = (sumXY - sumX * sumY / y) / (sumX2 - (sumX * sumX) / y); 
-    	
+    	/*
     	// assigns a trend
     	if (slope > 3.5) {
     		return "Up";
@@ -70,7 +73,9 @@ public class PressureData {
     		return "Down";
     	} else {
     		return "Stable";
-    	}
+    	}*/
+    	
+    	return slope;
     }
 	
 	public float getMinimum()
@@ -83,4 +88,7 @@ public class PressureData {
 		return maxValue;
 	}
 	
+	public float getAverage() {
+		return average;
+	}
 }

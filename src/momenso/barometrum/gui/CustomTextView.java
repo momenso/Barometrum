@@ -5,7 +5,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
-import android.graphics.PorterDuff.Mode;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.util.AttributeSet;
@@ -27,7 +26,6 @@ public class CustomTextView extends TextView {
 	
 	@Override
 	protected void onDraw(Canvas canvas) {
-		
 		
 		Paint paint = new Paint();
 		paint.setStyle(Style.FILL);

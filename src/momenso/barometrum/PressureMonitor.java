@@ -8,7 +8,12 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
+import android.util.Log;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.text.DecimalFormat;
@@ -21,10 +26,10 @@ import com.androidplot.xy.XYPlot;
 import com.androidplot.xy.SimpleXYSeries;
 
 
-public class PressureMonitor extends Activity implements SensorEventListener {
+public class PressureMonitor extends Activity implements SensorEventListener, LocationListener {
 
 	private PressureData pressureData;
-	private XYSeries series1;
+	private XYSeries pressureSeries;
 	
 	/** Called when the activity is first created. */
     @Override
@@ -44,6 +49,9 @@ public class PressureMonitor extends Activity implements SensorEventListener {
 	    if (barometer != null) {
 	    	sm.registerListener(this, barometer, SensorManager.SENSOR_DELAY_NORMAL);
 	    }
+	    
+	    LocationManager lm = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+	    lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
     }
     
     private void initializeGraph() {    	
@@ -67,21 +75,26 @@ public class PressureMonitor extends Activity implements SensorEventListener {
     	XYPlot plot = (XYPlot)this.findViewById(R.id.mySimpleXYPlot);
     	if (plot != null)
     	{
-    		plot.removeSeries(series1);
+    		plot.removeSeries(pressureSeries);
     		
-    		series1 = new SimpleXYSeries(
+    		pressureSeries = new SimpleXYSeries(
 			        Arrays.asList(pressureData.get()),
 			        SimpleXYSeries.ArrayFormat.Y_VALS_ONLY,
 					"Air Pressure");
 			 		
-			LineAndPointFormatter series1Format = 
+			LineAndPointFormatter graphLineFormat = 
 				new LineAndPointFormatter(
 			            Color.rgb(0, 255, 0),          // line color
 			            Color.GREEN,                   // point color
 			            Color.TRANSPARENT);            // fill color (optional)
+
+			plot.addSeries(pressureSeries, graphLineFormat);
+			plot.setRangeBoundaries(
+					pressureData.getMinimum() - 1, 
+					pressureData.getMaximum() + 1, 
+					BoundaryMode.FIXED);
 			
-			plot.addSeries(series1, series1Format);
-			plot.setRangeBoundaries(pressureData.getMinimum(), pressureData.getMaximum(), BoundaryMode.FIXED);
+			//plot.setRangeBoundaries(950, 1100, BoundaryMode.FIXED);
 			
 			plot.redraw();
     	}
@@ -98,15 +111,19 @@ public class PressureMonitor extends Activity implements SensorEventListener {
 		float currentValue = event.values[0];
 		pressureData.add(currentValue);
         
-        DecimalFormat dec = new DecimalFormat("0.00");
+        DecimalFormat dec = new DecimalFormat("0.0");
     	//String value = String.valueOf(dec.format(currentValue));
         
         TextView minimumValueText = (TextView) findViewById(R.id.minimumReading);
-        minimumValueText.setText(dec.format(pressureData.getMinimum()) + "\nmin");
+        minimumValueText.setText("Lowest " + dec.format(pressureData.getMinimum()));
         TextView currentValueText = (TextView) findViewById(R.id.currentReading);
-        currentValueText.setText(dec.format(currentValue) + "\n" + pressureData.getTrend());
+        currentValueText.setText(dec.format(pressureData.getAverage()));
         TextView maximumValueText = (TextView) findViewById(R.id.maximumReading);
-    	maximumValueText.setText(dec.format(pressureData.getMaximum()) + "\nmax");
+    	maximumValueText.setText("Highest " + dec.format(pressureData.getMaximum()));
+    	
+    	float trend = pressureData.getTrend();
+    	ImageView arrow = (ImageView) findViewById(R.id.arrowImage);
+    	arrow.setRotation((float)Math.atan(trend / 100));
     	
     	updateGraph();
 	}
@@ -117,6 +134,9 @@ public class PressureMonitor extends Activity implements SensorEventListener {
 		
 		SensorManager sm = (SensorManager)getSystemService(Context.SENSOR_SERVICE); 
 		sm.unregisterListener(this);
+		
+		LocationManager lm = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+		lm.removeUpdates(this);
 	}
 	
 	@Override
@@ -124,6 +144,27 @@ public class PressureMonitor extends Activity implements SensorEventListener {
 		super.onResume();
 		
 		registerSensor();
+	}
+
+	public void onLocationChanged(Location location) {
+		double altitude = location.getAltitude();
+		//float accuracy = location.getAccuracy();
+		
+		TextView altitudeText = (TextView)findViewById(R.id.altitudeReading);
+		//DecimalFormat dec = new DecimalFormat("0.00");
+		altitudeText.setText("Elevation\n" + String.format("%.0f", altitude)/*dec.format(altitude)*/ + "m");
+	}
+
+	public void onProviderDisabled(String provider) {
+		Log.v("ALTITUDE", "Provider disabled=" + provider);
+	}
+
+	public void onProviderEnabled(String provider) {
+		Log.v("ALTITUDE", "Provider enabled=" + provider);
+	}
+
+	public void onStatusChanged(String provider, int status, Bundle extras) {
+		Log.v("ALTITUDE", "Status changed=" + status);
 	}
     
 }
