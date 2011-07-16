@@ -1,0 +1,6 @@
+Barometrum is a simple application that displays actual barometric air pressure and plots the reading values in a graph.
+You can use Barometrum to observe the different pressure readings according to your altitude. The readings provided will reflect even small changes in your current altitude as well as usual changes in the atmospheric air pressure at a fixed position.
+
+Changes in the atmospheric air pressure tends to be very slow changing and subject to weather condition but you can have a more dynamic experience climbing the stairs of a building.
+
+Please note that this application requires a pressure sensor such as the one available on the Motorola XOOM tablet device to work.
