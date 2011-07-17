@@ -28,16 +28,16 @@ import com.androidplot.xy.SimpleXYSeries;
 
 public class PressureMonitor extends Activity implements SensorEventListener, LocationListener {
 
-	private PressureData pressureData;
+	private ReadingsData pressureData;
 	private XYSeries pressureSeries;
-	
+		
 	/** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
         
-        pressureData = new PressureData();
+        pressureData = new ReadingsData();
         
         registerSensor();
         initializeGraph();
@@ -76,26 +76,22 @@ public class PressureMonitor extends Activity implements SensorEventListener, Lo
     	if (plot != null)
     	{
     		plot.removeSeries(pressureSeries);
-    		
     		pressureSeries = new SimpleXYSeries(
 			        Arrays.asList(pressureData.get()),
 			        SimpleXYSeries.ArrayFormat.Y_VALS_ONLY,
 					"Air Pressure");
-			 		
-			LineAndPointFormatter graphLineFormat = 
+			LineAndPointFormatter pressureLineFormat = 
 				new LineAndPointFormatter(
-			            Color.rgb(0, 255, 0),          // line color
-			            Color.GREEN,                   // point color
-			            Color.TRANSPARENT);            // fill color (optional)
-
-			plot.addSeries(pressureSeries, graphLineFormat);
+			            Color.GREEN,          // line color
+			            Color.GREEN,          // point color
+			            Color.TRANSPARENT);   // fill color (optional)
+			plot.addSeries(pressureSeries, pressureLineFormat);
+			
 			plot.setRangeBoundaries(
 					pressureData.getMinimum() - 1, 
 					pressureData.getMaximum() + 1, 
 					BoundaryMode.FIXED);
-			
-			//plot.setRangeBoundaries(950, 1100, BoundaryMode.FIXED);
-			
+
 			plot.redraw();
     	}
     			
@@ -147,12 +143,12 @@ public class PressureMonitor extends Activity implements SensorEventListener, Lo
 	}
 
 	public void onLocationChanged(Location location) {
-		double altitude = location.getAltitude();
+		float currentAltitude = (float)location.getAltitude();
 		//float accuracy = location.getAccuracy();
 		
 		TextView altitudeText = (TextView)findViewById(R.id.altitudeReading);
 		//DecimalFormat dec = new DecimalFormat("0.00");
-		altitudeText.setText("Elevation\n" + String.format("%.0f", altitude)/*dec.format(altitude)*/ + "m");
+		altitudeText.setText("Elevation\n" + String.format("%.0fm", currentAltitude)/*dec.format(altitude)*/);
 	}
 
 	public void onProviderDisabled(String provider) {
