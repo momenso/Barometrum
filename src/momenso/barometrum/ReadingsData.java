@@ -57,23 +57,14 @@ public class ReadingsData {
     		float x = point.getValue();
     		sumX += x;
     		sumY += y;
-    		sumXY += x*y;
-    		sumX2 += x*x;
+    		sumXY += x * y;
+    		sumX2 += x * x;
     		y++;
     	}
 
-    	average = sumX / readingSamples.size();
+    	average = sumX / y; //readingSamples.size();
     	
     	float slope = (sumXY - sumX * sumY / y) / (sumX2 - (sumX * sumX) / y); 
-    	/*
-    	// assigns a trend
-    	if (slope > 3.5) {
-    		return "Up";
-    	} else if (slope < -3.5) {
-    		return "Down";
-    	} else {
-    		return "Stable";
-    	}*/
     	
     	return slope;
     }

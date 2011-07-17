@@ -13,11 +13,14 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.text.DecimalFormat;
 import java.util.Arrays;
+
+import momenso.barometrum.gui.CustomTextView;
 
 import com.androidplot.series.XYSeries;
 import com.androidplot.xy.BoundaryMode;
@@ -30,6 +33,7 @@ public class PressureMonitor extends Activity implements SensorEventListener, Lo
 
 	private ReadingsData pressureData;
 	private XYSeries pressureSeries;
+	private boolean GPSRegistered = false;
 		
 	/** Called when the activity is first created. */
     @Override
@@ -50,8 +54,32 @@ public class PressureMonitor extends Activity implements SensorEventListener, Lo
 	    	sm.registerListener(this, barometer, SensorManager.SENSOR_DELAY_NORMAL);
 	    }
 	    
-	    LocationManager lm = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
-	    lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
+	    final CustomTextView altimeter = (CustomTextView)this.findViewById(R.id.altitudeReading);
+	    altimeter.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+			    if (switchGPSSensor()) {
+			    	altimeter.setText("...");
+			    } else {
+			    	altimeter.setText("Altimeter\nDisabled");
+			    }
+			}
+		});
+	    
+    }
+    
+    private boolean switchGPSSensor() {
+    	
+    	LocationManager lm = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+    	
+    	if (!GPSRegistered) {
+		    lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
+		    GPSRegistered = true;
+    	} else {
+    		lm.removeUpdates(this);
+    		GPSRegistered = false;
+    	}
+    	
+    	return GPSRegistered;
     }
     
     private void initializeGraph() {    	
@@ -88,8 +116,8 @@ public class PressureMonitor extends Activity implements SensorEventListener, Lo
 			plot.addSeries(pressureSeries, pressureLineFormat);
 			
 			plot.setRangeBoundaries(
-					pressureData.getMinimum() - 1, 
-					pressureData.getMaximum() + 1, 
+					pressureData.getMinimum() - 0.5, 
+					pressureData.getMaximum() + 0.5, 
 					BoundaryMode.FIXED);
 
 			plot.redraw();
@@ -107,7 +135,7 @@ public class PressureMonitor extends Activity implements SensorEventListener, Lo
 		float currentValue = event.values[0];
 		pressureData.add(currentValue);
         
-        DecimalFormat dec = new DecimalFormat("0.0");
+        DecimalFormat dec = new DecimalFormat("0.00");
     	//String value = String.valueOf(dec.format(currentValue));
         
         TextView minimumValueText = (TextView) findViewById(R.id.minimumReading);

@@ -50,7 +50,7 @@
 			android:layout_height="wrap_content"
 			android:layout_gravity="center|center_vertical"/>
 		<momenso.barometrum.gui.CustomTextView
-			android:text="..." 
+			android:text="Activate\nGPS Altimeter" 
 			android:gravity="center|center_vertical"
 			android:layout_width="wrap_content"
 			android:layout_height="fill_parent" 
