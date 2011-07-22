@@ -3,6 +3,9 @@ package momenso.barometrum;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -13,10 +16,14 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import java.io.FileOutputStream;
 import java.text.DecimalFormat;
 import java.util.Arrays;
 
@@ -45,6 +52,56 @@ public class PressureMonitor extends Activity implements SensorEventListener, Lo
         
         registerSensor();
         initializeGraph();
+    }
+    
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+    	MenuInflater inflater = getMenuInflater();
+    	inflater.inflate(R.menu.menu_options, menu);
+    	
+    	return true;
+    }
+    
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+    	AlertDialog alertDialog;
+    	
+    	switch (item.getItemId()) {
+    		case R.id.itemMenuSave:
+        		saveReadings();
+    			return true;
+    			
+    		case R.id.itemMenuLoad:
+    			unregisterPressureSensor();
+    			loadReadings();
+    			
+    			return true;
+    			
+    		case R.id.itemMenuAbout:
+    			String version = "Unknown";
+				try {
+					PackageInfo pi = getPackageManager().getPackageInfo(getPackageName(), 0);
+					version = pi.versionName;
+				} catch (NameNotFoundException e) { }
+    			
+        		alertDialog = new AlertDialog.Builder(this).create();
+        		alertDialog.setTitle("About");
+        		alertDialog.setMessage("Barometrum " + version);
+        		alertDialog.show();
+    			return true;
+    			
+    		default:
+    			return super.onOptionsItemSelected(item);
+    	}
+    }
+    
+    private void saveReadings() {
+    	//FileOutputStream fos = openFileOutput("readings", Context.MODE_PRIVATE);
+    	//fos.write(buffer)
+    }
+    
+    private void loadReadings() {
+    	
     }
     
     private void registerSensor() {
@@ -152,12 +209,16 @@ public class PressureMonitor extends Activity implements SensorEventListener, Lo
     	updateGraph();
 	}
 	
+	private void unregisterPressureSensor() {
+		SensorManager sm = (SensorManager)getSystemService(Context.SENSOR_SERVICE); 
+		sm.unregisterListener(this);
+	}
+	
 	@Override
 	protected void onPause() {
 		super.onPause();
 		
-		SensorManager sm = (SensorManager)getSystemService(Context.SENSOR_SERVICE); 
-		sm.unregisterListener(this);
+		unregisterPressureSensor();
 		
 		LocationManager lm = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
 		lm.removeUpdates(this);
@@ -175,8 +236,7 @@ public class PressureMonitor extends Activity implements SensorEventListener, Lo
 		//float accuracy = location.getAccuracy();
 		
 		TextView altitudeText = (TextView)findViewById(R.id.altitudeReading);
-		//DecimalFormat dec = new DecimalFormat("0.00");
-		altitudeText.setText("Elevation\n" + String.format("%.0fm", currentAltitude)/*dec.format(altitude)*/);
+		altitudeText.setText("Elevation\n" + String.format("%.0fm", currentAltitude));
 	}
 
 	public void onProviderDisabled(String provider) {
