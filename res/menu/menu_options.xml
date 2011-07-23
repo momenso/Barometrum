@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu
   xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@+id/itemMenuSave" android:title="Save" />
-    <item android:id="@+id/itemMenuLoad" android:title="Load" />
+    <item android:id="@+id/itemMenuClear" android:title="Clear" />
 </menu>

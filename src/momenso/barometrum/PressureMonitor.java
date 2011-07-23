@@ -54,9 +54,35 @@ public class PressureMonitor extends Activity implements SensorEventListener, Lo
         
         pressureData = new ReadingsData();
         
-        registerSensor();
+        loadReadings(); //registerSensor();
         initializeGraph();
     }
+    
+    @Override
+	protected void onPause() {
+		super.onPause();
+		
+		unregisterPressureSensor();
+		
+		LocationManager lm = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+		lm.removeUpdates(this);
+		
+		saveReadings();
+	}
+	
+	@Override
+	protected void onResume() {
+		super.onResume();
+		
+		registerSensor();
+	}
+	
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		saveReadings();
+		
+		super.onSaveInstanceState(outState);
+	}
     
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -70,21 +96,17 @@ public class PressureMonitor extends Activity implements SensorEventListener, Lo
     public boolean onOptionsItemSelected(MenuItem item) {
     	
     	switch (item.getItemId()) {
-    		case R.id.itemMenuSave:
-        		saveReadings();
+    		case R.id.itemMenuClear:
+        		pressureData.clear();
     			return true;
-    			
-    		case R.id.itemMenuLoad:
-    			loadReadings();
-    			return true;
-    			    			
+    			    			    			
     		default:
     			return super.onOptionsItemSelected(item);
     	}
     }
     
     private void saveReadings() {
-    	AlertDialog alertDialog;
+
     	unregisterPressureSensor();
     	
     	try {
@@ -96,14 +118,8 @@ public class PressureMonitor extends Activity implements SensorEventListener, Lo
     			os.writeObject(n);
     			qtd++;
     		}
-    		
-    		alertDialog = new AlertDialog.Builder(this).create();
-    		alertDialog.setTitle("Save");
-    		alertDialog.setMessage("Readings saved: " + qtd);
-    		alertDialog.show();
-
 		} catch (IOException e) {
-			
+			AlertDialog alertDialog;
     		alertDialog = new AlertDialog.Builder(this).create();
     		alertDialog.setTitle("Save");
     		alertDialog.setMessage("Failed to save readings: " + e.getLocalizedMessage());
@@ -114,7 +130,7 @@ public class PressureMonitor extends Activity implements SensorEventListener, Lo
     }
     
     private void loadReadings() {
-    	AlertDialog alertDialog;
+    	
     	unregisterPressureSensor();
     	
     	List<PressureDataPoint> data = new ArrayList<PressureDataPoint>();
@@ -130,27 +146,23 @@ public class PressureMonitor extends Activity implements SensorEventListener, Lo
     			data.add((PressureDataPoint)item);
     			qtd++;
     		}
-    		    		
     	} catch (EOFException ex) {
     		this.pressureData.set(data);    		
     	} catch (Exception e) {
+    		AlertDialog alertDialog;
     		alertDialog = new AlertDialog.Builder(this).create();
     		alertDialog.setTitle("Load");
     		alertDialog.setMessage("Failed to load readings: " + e.getLocalizedMessage());
     		alertDialog.show();
 		} finally {
-			
-    		alertDialog = new AlertDialog.Builder(this).create();
-    		alertDialog.setTitle("Load");
-    		alertDialog.setMessage("Registers loaded: " + qtd);
-    		alertDialog.show();
-
-			registerPressureSensor();
+			//registerPressureSensor();
+    		updateGraph();
 		}
     }
     
     private void registerSensor() {
 	    registerPressureSensor();
+    	//loadReadings();
 	    
 	    final CustomTextView altimeter = (CustomTextView)this.findViewById(R.id.altitudeReading);
 	    altimeter.setOnClickListener(new View.OnClickListener() {
@@ -165,14 +177,8 @@ public class PressureMonitor extends Activity implements SensorEventListener, Lo
 	    
 	    final CustomTextView barometer = (CustomTextView)this.findViewById(R.id.currentReading);
 	    barometer.setOnClickListener(new View.OnClickListener() {
-			
 			public void onClick(View v) {
-				if (switchPressureSensor()) {
-					barometer.setText("...");
-			    } else {
-			    	barometer.setText("Paused");
-			    }
-				
+				switchPressureSensor();
 			}
 		});
     }
@@ -183,7 +189,20 @@ public class PressureMonitor extends Activity implements SensorEventListener, Lo
 	    if (barometer != null) {
 	    	sm.registerListener(this, barometer, SensorManager.SENSOR_DELAY_NORMAL);
 	    }
+	    
+	    final CustomTextView barometerDisplay = 
+    		(CustomTextView)this.findViewById(R.id.currentReading);
+	    barometerDisplay.setText("...");
     }
+    
+    private void unregisterPressureSensor() {
+		SensorManager sm = (SensorManager)getSystemService(Context.SENSOR_SERVICE); 
+		sm.unregisterListener(this);
+		
+		final CustomTextView barometerDisplay = 
+    		(CustomTextView)this.findViewById(R.id.currentReading);
+	    barometerDisplay.setText("Paused");
+	}
     
     private boolean switchPressureSensor() {
     	
@@ -278,31 +297,11 @@ public class PressureMonitor extends Activity implements SensorEventListener, Lo
     	
     	float trend = pressureData.getTrend();
     	ImageView arrow = (ImageView) findViewById(R.id.arrowImage);
-    	arrow.setRotation((float)Math.atan(trend / 100));
+    	float degrees = (float)Math.toDegrees(Math.atan(trend));
+    	arrow.setRotation(degrees);
+    	Log.v("TREND", "Slope: " + trend + ", Degrees: " + degrees);
     	
     	updateGraph();
-	}
-	
-	private void unregisterPressureSensor() {
-		SensorManager sm = (SensorManager)getSystemService(Context.SENSOR_SERVICE); 
-		sm.unregisterListener(this);
-	}
-	
-	@Override
-	protected void onPause() {
-		super.onPause();
-		
-		unregisterPressureSensor();
-		
-		LocationManager lm = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
-		lm.removeUpdates(this);
-	}
-	
-	@Override
-	protected void onResume() {
-		super.onResume();
-		
-		registerSensor();
 	}
 
 	public void onLocationChanged(Location location) {
