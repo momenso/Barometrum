@@ -1,9 +1,10 @@
 package momenso.barometrum;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class ReadingsData {
-	private ArrayList<PressureDataPoint> readingSamples;
+	private List<PressureDataPoint> readingSamples;
 	private long eventTime;
 	private float minValue = Float.MAX_VALUE;
 	private float maxValue = Float.MIN_VALUE;
@@ -16,7 +17,7 @@ public class ReadingsData {
 
 	public void add(float pressureValue) {
 		
-		if (readingSamples.size() > 100) {
+		if (readingSamples.size() > 500) {
     		readingSamples.remove(0);
     	}
 		
@@ -30,17 +31,23 @@ public class ReadingsData {
     	readingSamples.add(newSample);
 	}
 	
-	public Number[] get()
+	public List<PressureDataPoint> get()
 	{
-		PressureDataPoint[] values = readingSamples.toArray(new PressureDataPoint[0]);
-    	Number[] data = new Number[values.length];
-    	
-    	int i = 0;
-    	for (PressureDataPoint m : values) {
-    		data[i++] = m.getValue();
-    	}
-    	
+		return readingSamples;
+	}
+	
+	public List<Number> getPressure() {
+		
+		List<Number> data = new ArrayList<Number>();
+		for (PressureDataPoint m : readingSamples) {
+			data.add(m.getValue());
+		}
+
     	return data;
+	}
+	
+	public void set(List<PressureDataPoint> data) {
+		this.readingSamples = data;
 	}
 	
 	public float getTrend()

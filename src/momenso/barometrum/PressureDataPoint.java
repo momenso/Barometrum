@@ -1,6 +1,12 @@
 package momenso.barometrum;
 
-public class PressureDataPoint {
+import java.io.Serializable;
+
+public class PressureDataPoint implements Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -3959936631531969908L;
 	private float value;
 	private long time;
 	
