@@ -10,6 +10,11 @@ public class PressureDataPoint implements Serializable {
 	private float value;
 	private long time;
 	
+	public PressureDataPoint() {
+		this.setValue(0);
+		this.setTime(0);
+	}
+	
 	public PressureDataPoint(long time, float value) {
 		this.setValue(value);
 		this.setTime(time);
@@ -30,4 +35,10 @@ public class PressureDataPoint implements Serializable {
 	public long getTime() {
 		return time;
 	}
+	
+	public void reset() {
+		this.time = 0;
+		this.value = 0;
+	}
+	
 }

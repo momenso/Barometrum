@@ -60,7 +60,8 @@ public class PressureMonitor
         
         pressureData = new ReadingsData();
         lastKnownAltitude = loadLastKnownAltitude();
-        preferences = new Preferences(getApplicationContext());        
+        preferences = new Preferences(getApplicationContext());
+        pressureData.setMode(preferences.getPressureMode(), lastKnownAltitude);
         
         loadReadings();
         initializeGraph();
@@ -343,17 +344,14 @@ public class PressureMonitor
     	
 		float currentValue = event.values[0];
 		pressureData.add(currentValue);
-        
-        DecimalFormat dec = new DecimalFormat("0.00");
-    	//String value = String.valueOf(dec.format(currentValue));
-        
+                
         TextView minimumValueText = (TextView) findViewById(R.id.minimumReading);
-        minimumValueText.setText("Lowest " + dec.format(pressureData.getMinimum()));
+        minimumValueText.setText(String.format("Lowest %.2f", pressureData.getMinimum()));
         TextView maximumValueText = (TextView) findViewById(R.id.maximumReading);
-    	maximumValueText.setText("Highest " + dec.format(pressureData.getMaximum()));
+    	maximumValueText.setText(String.format("Highest %.2f", pressureData.getMaximum()));
 
     	TextView currentValueText = (TextView) findViewById(R.id.currentReading);
-        currentValueText.setText(dec.format(pressureData.getAverage()));
+        currentValueText.setText(String.format("%.2f", pressureData.getAverage()));
     	
     	float trend = pressureData.getTrend();
     	float degrees = (float)Math.toDegrees(Math.atan(trend));

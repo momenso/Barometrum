@@ -11,6 +11,7 @@ public class ReadingsData {
 	private List<PressureDataPoint> readingSamples;
 	private PressureDataPoint minValue = new PressureDataPoint(0, Float.MAX_VALUE);
 	private PressureDataPoint maxValue = new PressureDataPoint(0, Float.MIN_VALUE);
+
 	private float average = 0;
 	private PressureMode mode = PressureMode.BAROMETRIC;
 	private float currentElevation = 0;
@@ -27,7 +28,7 @@ public class ReadingsData {
 
 	public void add(float pressureValue) 
 	{
-		if (readingSamples.size() == 0) {
+		if (currentElevation == 0 && readingSamples.size() == 0) {
 			// estimate elevation based on pressure
 			currentElevation = estimateElevationAt(pressureValue);
 		}
@@ -66,6 +67,7 @@ public class ReadingsData {
 	{
 		this.minValue = new PressureDataPoint(0, Float.MAX_VALUE);
 		this.maxValue = new PressureDataPoint(0, Float.MIN_VALUE);
+		
 		for (PressureDataPoint p : this.readingSamples) {
 			// TODO: Implement PressureDataPoint compare
 			if (this.minValue.getValue() > p.getValue()) {
@@ -84,7 +86,7 @@ public class ReadingsData {
 
 		updateMinMax();
 		
-		if (readingSamples.size() == 0) {
+		if (currentElevation == 0 && readingSamples.size() == 0) {
 			// estimate elevation based on pressure
 			currentElevation = estimateElevationAt(data.get(data.size() - 1).getValue());
 		}
@@ -132,19 +134,31 @@ public class ReadingsData {
 	
 	public float getMinimum()
 	{
+		float value = minValue.getValue();
+		
+		if (value == Float.MAX_VALUE) {
+			return 0;
+		}
+		
 		if (mode == PressureMode.MSLP) {
-			return convertToBarometric(minValue.getValue());
+			return convertToBarometric(value);
 		} else {
-			return minValue.getValue();
+			return value;
 		}
 	}
 	
 	public float getMaximum()
 	{
+		float value = maxValue.getValue();
+		
+		if (value == Float.MIN_VALUE) {
+			return 0;
+		}
+		
 		if (mode == PressureMode.MSLP) {
-			return convertToBarometric(maxValue.getValue());
+			return convertToBarometric(value);
 		} else {
-			return maxValue.getValue();
+			return value;
 		}
 	}
 	
@@ -159,6 +173,8 @@ public class ReadingsData {
 
 	public void clear() {
 		this.readingSamples.clear();
+		this.minValue = new PressureDataPoint(0, Float.MAX_VALUE);
+		this.maxValue = new PressureDataPoint(0, Float.MIN_VALUE);
 	}
 
 	public void setCurrentElevation(float altitude) {
