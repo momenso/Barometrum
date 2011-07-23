@@ -30,6 +30,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
+import momenso.barometrum.ReadingsData.PressureMode;
 import momenso.barometrum.gui.CustomTextView;
 
 import com.androidplot.series.XYSeries;
@@ -39,12 +40,17 @@ import com.androidplot.xy.XYPlot;
 import com.androidplot.xy.SimpleXYSeries;
 
 
-public class PressureMonitor extends Activity implements SensorEventListener, LocationListener {
+public class PressureMonitor 
+	extends Activity 
+	implements SensorEventListener, LocationListener 
+{
 
 	private ReadingsData pressureData;
 	private XYSeries pressureSeries;
 	private boolean GPSRegistered = false;
 	private boolean barometerRegistered = false;
+	private float lastKnownAltitude = 0;
+	private Preferences preferences;
 		
 	/** Called when the activity is first created. */
     @Override
@@ -53,11 +59,13 @@ public class PressureMonitor extends Activity implements SensorEventListener, Lo
         setContentView(R.layout.main);
         
         pressureData = new ReadingsData();
+        lastKnownAltitude = loadLastKnownAltitude();
+        preferences = new Preferences(getApplicationContext());        
         
-        loadReadings(); //registerSensor();
+        loadReadings();
         initializeGraph();
     }
-    
+        
     @Override
 	protected void onPause() {
 		super.onPause();
@@ -80,6 +88,7 @@ public class PressureMonitor extends Activity implements SensorEventListener, Lo
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
 		saveReadings();
+		saveLastKnownAltitude(lastKnownAltitude);
 		
 		super.onSaveInstanceState(outState);
 	}
@@ -88,6 +97,20 @@ public class PressureMonitor extends Activity implements SensorEventListener, Lo
     public boolean onCreateOptionsMenu(Menu menu) {
     	MenuInflater inflater = getMenuInflater();
     	inflater.inflate(R.menu.menu_options, menu);
+    	
+    	PressureMode mode = preferences.getPressureMode();
+    	MenuItem item;
+    	switch (mode) {
+    		case BAROMETRIC:
+    			item = menu.findItem(R.id.Barometric);
+    			item.setChecked(true);
+    			break;
+    			
+    		case MSLP:
+    			item = menu.findItem(R.id.MSLP);
+    			item.setChecked(true);
+    			break;
+    	}
     	
     	return true;
     }
@@ -99,11 +122,47 @@ public class PressureMonitor extends Activity implements SensorEventListener, Lo
     		case R.id.itemMenuClear:
         		pressureData.clear();
     			return true;
-    			    			    			
+    			
+    		case R.id.Barometric:
+    			preferences.setPressureMode(PressureMode.BAROMETRIC);
+    			pressureData.setMode(PressureMode.BAROMETRIC);
+    			item.setChecked(true);
+    			return true;
+    			
+    		case R.id.MSLP:
+    			preferences.setPressureMode(PressureMode.MSLP);
+    			pressureData.setMode(PressureMode.MSLP, lastKnownAltitude);
+    			item.setChecked(true);
+    			return true;
+    			
     		default:
     			return super.onOptionsItemSelected(item);
     	}
     }
+        
+	private void saveLastKnownAltitude(float altitude)
+	{
+    	try {
+    		FileOutputStream fos = openFileOutput("altitude", Context.MODE_PRIVATE);
+    		ObjectOutputStream os = new ObjectOutputStream(fos);
+    		Float altitudeObject = altitude;
+    		os.writeObject(altitudeObject);
+		} catch (IOException e) { }
+	}
+
+	private float loadLastKnownAltitude() {
+    	try {
+    		FileInputStream fis = openFileInput("altitude");
+    		ObjectInputStream is = new ObjectInputStream(fis);
+    		
+    		Object item = is.readObject();
+    		if (item instanceof Float) {
+    			return (Float)item;
+    		}
+    	} catch (Exception ex) { }
+    	
+    	return 0;
+	}
     
     private void saveReadings() {
 
@@ -266,8 +325,8 @@ public class PressureMonitor extends Activity implements SensorEventListener, Lo
 			plot.addSeries(pressureSeries, pressureLineFormat);
 			
 			plot.setRangeBoundaries(
-					pressureData.getMinimum() - 0.5, 
-					pressureData.getMaximum() + 0.5, 
+					pressureData.getMinimum() - 0.4, 
+					pressureData.getMaximum() + 0.4, 
 					BoundaryMode.FIXED);
 
 			plot.redraw();
@@ -290,26 +349,28 @@ public class PressureMonitor extends Activity implements SensorEventListener, Lo
         
         TextView minimumValueText = (TextView) findViewById(R.id.minimumReading);
         minimumValueText.setText("Lowest " + dec.format(pressureData.getMinimum()));
-        TextView currentValueText = (TextView) findViewById(R.id.currentReading);
-        currentValueText.setText(dec.format(pressureData.getAverage()));
         TextView maximumValueText = (TextView) findViewById(R.id.maximumReading);
     	maximumValueText.setText("Highest " + dec.format(pressureData.getMaximum()));
+
+    	TextView currentValueText = (TextView) findViewById(R.id.currentReading);
+        currentValueText.setText(dec.format(pressureData.getAverage()));
     	
     	float trend = pressureData.getTrend();
-    	ImageView arrow = (ImageView) findViewById(R.id.arrowImage);
     	float degrees = (float)Math.toDegrees(Math.atan(trend));
+    	ImageView arrow = (ImageView) findViewById(R.id.arrowImage);
     	arrow.setRotation(degrees);
-    	Log.v("TREND", "Slope: " + trend + ", Degrees: " + degrees);
     	
     	updateGraph();
 	}
 
 	public void onLocationChanged(Location location) {
-		float currentAltitude = (float)location.getAltitude();
+		this.lastKnownAltitude = (float)location.getAltitude();
 		//float accuracy = location.getAccuracy();
+		saveLastKnownAltitude(lastKnownAltitude);
 		
 		TextView altitudeText = (TextView)findViewById(R.id.altitudeReading);
-		altitudeText.setText("Elevation\n" + String.format("%.0fm", currentAltitude));
+		altitudeText.setText("Elevation\n" + String.format("%.0fm", this.lastKnownAltitude));
+		pressureData.setCurrentElevation(this.lastKnownAltitude);
 	}
 
 	public void onProviderDisabled(String provider) {

@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu
   xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@+id/itemMenuClear" android:title="Clear" />
+  	<group android:checkableBehavior="single">
+  		<item android:id="@+id/MSLP" android:title="Mean sea level"/>
+  		<item android:id="@+id/Barometric" android:title="Barometric"/>
+  	</group>
+    <item android:id="@+id/itemMenuClear" android:title="Clear Readings" />
 </menu>
