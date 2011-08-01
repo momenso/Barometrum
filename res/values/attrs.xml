@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="CustomTextView">
+    	<attr name="borderTop" format="boolean" />
+    	<attr name="borderLeft" format="boolean" />
+    	<attr name="borderRight" format="boolean" />
+    	<attr name="borderBottom" format="boolean" />
+    </declare-styleable>
+    <declare-styleable name="BlockView">
+    	<attr name="border_top" format="boolean" />
+    	<attr name="border_left" format="boolean" />
+    	<attr name="border_right" format="boolean" />
+    	<attr name="border_bottom" format="boolean" />
+    </declare-styleable>    
+    <declare-styleable name="LabeledTextView">
+    	<attr name="label" format="string" />
+    	<attr name="unit" format="string" />
+    </declare-styleable>
+</resources>

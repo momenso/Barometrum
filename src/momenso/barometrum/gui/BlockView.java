@@ -6,13 +6,12 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Paint.Style;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.Paint.Style;
 import android.util.AttributeSet;
-import android.widget.TextView;
 
-public class CustomTextView extends TextView {
+public class BlockView extends LabeledTextView {
 
 	private enum Position { LEFT, TOP, RIGHT, BOTTOM };
 	private enum Corner { TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT };
@@ -26,29 +25,31 @@ public class CustomTextView extends TextView {
 	int backgroundColor = Color.rgb(30, 30, 30);
 	int borderColor = Color.rgb(150, 150, 150);
 	
-	public CustomTextView(Context context) {
+	public BlockView(Context context) {
 		super(context);
 	}
 	
-	public CustomTextView(Context context, AttributeSet attrs) {
+	public BlockView(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		
 		initializeParams(attrs);
 	}
 	
-	public CustomTextView(Context context, AttributeSet attrs, int defStyle) {
+	public BlockView(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
 		
 		initializeParams(attrs);
 	}
 	
 	protected void initializeParams(AttributeSet attrs) {
+		super.initializeParams(attrs);
+		
 		String nameSpace = "http://schemas.android.com/apk/res/momenso.barometrum";
 		
-		this.top = attrs.getAttributeBooleanValue(nameSpace, "borderTop", true);
-		this.left = attrs.getAttributeBooleanValue(nameSpace, "borderLeft", true);
-		this.right = attrs.getAttributeBooleanValue(nameSpace, "borderRight", true);
-		this.bottom = attrs.getAttributeBooleanValue(nameSpace, "borderBottom", true);
+		this.top = attrs.getAttributeBooleanValue(nameSpace, "border_top", true);
+		this.left = attrs.getAttributeBooleanValue(nameSpace, "border_left", true);
+		this.right = attrs.getAttributeBooleanValue(nameSpace, "border_right", true);
+		this.bottom = attrs.getAttributeBooleanValue(nameSpace, "border_bottom", true);
 	}
 	
 	@Override
@@ -255,15 +256,4 @@ public class CustomTextView extends TextView {
 				throw new InvalidParameterException();
 		}
 	}
-	
-	@Override
-	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-	
-		int parentWidth = MeasureSpec.getSize(widthMeasureSpec);
-	    //int parentHeight = MeasureSpec.getSize(heightMeasureSpec);
-	    
-	    this.setMeasuredDimension(parentWidth, (int)(getTextSize() + 15));
-	}
-	
 }

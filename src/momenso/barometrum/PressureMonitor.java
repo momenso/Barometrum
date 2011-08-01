@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -17,7 +18,6 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.io.EOFException;
@@ -26,11 +26,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
 import momenso.barometrum.ReadingsData.PressureMode;
+import momenso.barometrum.gui.BlockView;
+import momenso.barometrum.gui.ChartView;
 import momenso.barometrum.gui.CustomTextView;
 
 import com.androidplot.series.XYSeries;
@@ -51,17 +52,36 @@ public class PressureMonitor
 	private boolean barometerRegistered = false;
 	private float lastKnownAltitude = 0;
 	private Preferences preferences;
+	private long lastReadingMark = 0;
 		
 	/** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
-        
+
         pressureData = new ReadingsData();
         lastKnownAltitude = loadLastKnownAltitude();
         preferences = new Preferences(getApplicationContext());
         pressureData.setMode(preferences.getPressureMode(), lastKnownAltitude);
+
+        // initialize pressure reading font
+        CustomTextView currentReading = (CustomTextView) findViewById(R.id.currentReading);
+        Typeface font = Typeface.createFromAsset(getAssets(), "DS-DIGIB.TTF");
+        currentReading.setTypeface(font);
+        currentReading.setTextColor(Color.WHITE);
+        
+        Typeface standardFont = Typeface.createFromAsset(getAssets(), "ProFontWindows.ttf");
+        BlockView maxReading = (BlockView) findViewById(R.id.maximumReading);
+        maxReading.setTypeface(standardFont);
+        maxReading.setLabelWidth(8);
+        BlockView minReading = (BlockView) findViewById(R.id.minimumReading);
+        minReading.setTypeface(standardFont);
+        minReading.setLabelWidth(8);
+        BlockView altitudeReading = (BlockView) findViewById(R.id.altitudeReading);
+        altitudeReading.setTypeface(standardFont);
+        altitudeReading.setText(String.format("%.0f", lastKnownAltitude));
+        altitudeReading.setLabelWidth(8);
         
         loadReadings();
         initializeGraph();
@@ -120,9 +140,6 @@ public class PressureMonitor
     public boolean onOptionsItemSelected(MenuItem item) {
     	
     	switch (item.getItemId()) {
-    		case R.id.itemMenuClear:
-        		pressureData.clear();
-    			return true;
     			
     		case R.id.Barometric:
     			preferences.setPressureMode(PressureMode.BAROMETRIC);
@@ -135,6 +152,19 @@ public class PressureMonitor
     			pressureData.setMode(PressureMode.MSLP, lastKnownAltitude);
     			item.setChecked(true);
     			return true;
+
+    		case R.id.itemAltimeter:
+    			if (switchGPSSensor()) {
+    				item.setTitle(R.string.altimeterDisable);
+    			} else {
+    				item.setTitle(R.string.altimeterEnable);
+    			}
+    			return true;
+    			
+    		case R.id.itemMenuClear:
+        		pressureData.clear();
+    			return true;
+
     			
     		default:
     			return super.onOptionsItemSelected(item);
@@ -170,22 +200,26 @@ public class PressureMonitor
     	unregisterPressureSensor();
     	
     	try {
-    		FileOutputStream fos = openFileOutput("readings", Context.MODE_PRIVATE);
-    		ObjectOutputStream os = new ObjectOutputStream(fos);
-    		List<PressureDataPoint> data = pressureData.get();
-    		int qtd = 0;
-    		for(PressureDataPoint n : data) {
-    			os.writeObject(n);
-    			qtd++;
-    		}
+    		persistReadings(pressureData.get(), "readings");
+    		persistReadings(pressureData.getHistory(), "history");
 		} catch (IOException e) {
-			AlertDialog alertDialog;
+			/*AlertDialog alertDialog;
     		alertDialog = new AlertDialog.Builder(this).create();
     		alertDialog.setTitle("Save");
     		alertDialog.setMessage("Failed to save readings: " + e.getLocalizedMessage());
-    		alertDialog.show();
+    		alertDialog.show();*/
 		} finally {
 			registerPressureSensor();
+		}
+    }
+    
+    private void persistReadings(List<PressureDataPoint> data, String fileName) throws IOException {
+		
+    	FileOutputStream fos = openFileOutput(fileName, Context.MODE_PRIVATE);
+		ObjectOutputStream os = new ObjectOutputStream(fos);
+		
+		for(PressureDataPoint n : data) {
+			os.writeObject(n);
 		}
     }
     
@@ -193,38 +227,51 @@ public class PressureMonitor
     	
     	unregisterPressureSensor();
     	
-    	List<PressureDataPoint> data = new ArrayList<PressureDataPoint>();
-    	int qtd = 0;
-    	
     	try {
-    		FileInputStream fis = openFileInput("readings");
-    		ObjectInputStream is = new ObjectInputStream(fis);
     		
-    		Object item;
-    		while ((item = is.readObject()) != null) {
-    			if (item instanceof PressureDataPoint)
-    			data.add((PressureDataPoint)item);
-    			qtd++;
-    		}
-    	} catch (EOFException ex) {
-    		this.pressureData.set(data);    		
+    		List<PressureDataPoint> readings = restoreReadings("readings");
+    		this.pressureData.set(readings);
+    		
+    		List<PressureDataPoint> history = restoreReadings("history");
+    		this.pressureData.setHistory(history);
+    		
     	} catch (Exception e) {
-    		AlertDialog alertDialog;
+    		/*AlertDialog alertDialog;
     		alertDialog = new AlertDialog.Builder(this).create();
     		alertDialog.setTitle("Load");
     		alertDialog.setMessage("Failed to load readings: " + e.getLocalizedMessage());
-    		alertDialog.show();
+    		alertDialog.show();*/
 		} finally {
 			//registerPressureSensor();
     		updateGraph();
 		}
     }
     
+    private List<PressureDataPoint> restoreReadings(String fileName) throws IOException, ClassNotFoundException {
+    	
+    	List<PressureDataPoint> data = new ArrayList<PressureDataPoint>();
+    	
+    	try {
+    		FileInputStream fis = openFileInput(fileName);
+    		ObjectInputStream is = new ObjectInputStream(fis);
+    		
+    		Object item;
+    		while ((item = is.readObject()) != null) {
+    			if (item instanceof PressureDataPoint)
+    			data.add((PressureDataPoint)item);
+    		}
+    	} catch (EOFException ex) {
+    		// happens at the end of the file
+    	}
+
+		return data;
+    }
+    
     private void registerSensor() {
 	    registerPressureSensor();
     	//loadReadings();
 	    
-	    final CustomTextView altimeter = (CustomTextView)this.findViewById(R.id.altitudeReading);
+	    /*final BlockView altimeter = (BlockView)this.findViewById(R.id.altitudeReading);
 	    altimeter.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
 			    if (switchGPSSensor()) {
@@ -233,7 +280,7 @@ public class PressureMonitor
 			    	altimeter.setText("Altimeter\nDisabled");
 			    }
 			}
-		});
+		});*/
 	    
 	    final CustomTextView barometer = (CustomTextView)this.findViewById(R.id.currentReading);
 	    barometer.setOnClickListener(new View.OnClickListener() {
@@ -292,7 +339,7 @@ public class PressureMonitor
     	return GPSRegistered;
     }
     
-    private void initializeGraph() {    	
+    private void initializeGraph() {
     	XYPlot plot = (XYPlot)this.findViewById(R.id.mySimpleXYPlot);
     	if (plot != null) {
     		plot.setTicksPerRangeLabel(3);
@@ -326,13 +373,19 @@ public class PressureMonitor
 			plot.addSeries(pressureSeries, pressureLineFormat);
 			
 			plot.setRangeBoundaries(
-					pressureData.getMinimum() - 0.4, 
-					pressureData.getMaximum() + 0.4, 
+					pressureData.getMinimum() - 0.1, 
+					pressureData.getMaximum() + 0.1, 
 					BoundaryMode.FIXED);
 
 			plot.redraw();
     	}
-    			
+    	
+    	// update History graph
+    	ChartView historyChart = (ChartView)this.findViewById(R.id.historyChart);
+    	if (historyChart != null) {
+    		historyChart.updateData(pressureData.getHistory());
+    	}
+    	
 		//Log.v("updateGraph", "time=" + (System.currentTimeMillis() - start));
     }
     
@@ -342,23 +395,28 @@ public class PressureMonitor
 
 	public void onSensorChanged(SensorEvent event) {
     	
+		if (System.currentTimeMillis() - lastReadingMark < 500)
+			return;
+		
 		float currentValue = event.values[0];
 		pressureData.add(currentValue);
-                
-        TextView minimumValueText = (TextView) findViewById(R.id.minimumReading);
-        minimumValueText.setText(String.format("Lowest %.2f", pressureData.getMinimum()));
-        TextView maximumValueText = (TextView) findViewById(R.id.maximumReading);
-    	maximumValueText.setText(String.format("Highest %.2f", pressureData.getMaximum()));
+		
+		BlockView minimumValueText = (BlockView) findViewById(R.id.minimumReading);
+        minimumValueText.setText(String.format("%.2f", pressureData.getMinimum()));
+        BlockView maximumValueText = (BlockView) findViewById(R.id.maximumReading);
+    	maximumValueText.setText(String.format("%.2f", pressureData.getMaximum()));
 
     	TextView currentValueText = (TextView) findViewById(R.id.currentReading);
         currentValueText.setText(String.format("%.2f", pressureData.getAverage()));
-    	
-    	float trend = pressureData.getTrend();
-    	float degrees = (float)Math.toDegrees(Math.atan(trend));
+    	/*
+    	float trend = */pressureData.getTrend();
+    	/*float degrees = (float)Math.toDegrees(Math.atan(trend));
     	ImageView arrow = (ImageView) findViewById(R.id.arrowImage);
     	arrow.setRotation(degrees);
-    	
+    	*/
     	updateGraph();
+    	
+    	lastReadingMark = System.currentTimeMillis();
 	}
 
 	public void onLocationChanged(Location location) {
@@ -366,7 +424,7 @@ public class PressureMonitor
 		//float accuracy = location.getAccuracy();
 		saveLastKnownAltitude(lastKnownAltitude);
 		
-		TextView altitudeText = (TextView)findViewById(R.id.altitudeReading);
+		BlockView altitudeText = (BlockView)findViewById(R.id.altitudeReading);
 		altitudeText.setText("Elevation\n" + String.format("%.0fm", this.lastKnownAltitude));
 		pressureData.setCurrentElevation(this.lastKnownAltitude);
 	}

@@ -5,5 +5,6 @@
   		<item android:id="@+id/MSLP" android:title="Mean sea level"/>
   		<item android:id="@+id/Barometric" android:title="Barometric"/>
   	</group>
+  	<item android:id="@+id/itemAltimeter" android:title="@string/altimeterEnable" />
     <item android:id="@+id/itemMenuClear" android:title="Clear Readings" />
 </menu>

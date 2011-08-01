@@ -8,6 +8,7 @@ public class ReadingsData {
 	
 	public enum PressureMode { BAROMETRIC, MSLP };
 	
+	private List<PressureDataPoint> historySamples;
 	private List<PressureDataPoint> readingSamples;
 	private PressureDataPoint minValue = new PressureDataPoint(0, Float.MAX_VALUE);
 	private PressureDataPoint maxValue = new PressureDataPoint(0, Float.MIN_VALUE);
@@ -18,7 +19,8 @@ public class ReadingsData {
 
 	public ReadingsData() 
 	{
-		readingSamples = new ArrayList<PressureDataPoint>();		
+		readingSamples = new ArrayList<PressureDataPoint>();
+		historySamples = new ArrayList<PressureDataPoint>();
 	}
 	
 	private float estimateElevationAt(float pressure) {
@@ -28,24 +30,54 @@ public class ReadingsData {
 
 	public void add(float pressureValue) 
 	{
+		//long timeFrame = 3600000; // hour
+		long timeFrame = 60000; // minute
+		
 		if (currentElevation == 0 && readingSamples.size() == 0) {
-			// estimate elevation based on pressure
 			currentElevation = estimateElevationAt(pressureValue);
 		}
 		
-		if (readingSamples.size() > 100) {
-    		readingSamples.remove(0);
-    	}
+		PressureDataPoint newSample = 
+    		new PressureDataPoint((System.currentTimeMillis()), pressureValue);
+		readingSamples.add(newSample);
+		
+		// clean old reading samples
+		if (readingSamples.size() > 0) {
+			PressureDataPoint first = readingSamples.get(0);
+			long firstDate = first.getTime() / timeFrame;
+			long currentDate = System.currentTimeMillis() / timeFrame;
+			if (firstDate < currentDate) {
+				readingSamples.remove(0);
+			}
+		}
 		
 		updateMinMax();
 		
-    	PressureDataPoint newSample = 
-    		new PressureDataPoint((System.currentTimeMillis()), pressureValue);
-    	readingSamples.add(newSample);
+    	//update history
+		if (historySamples.size() > 0)
+		{
+			PressureDataPoint lastHistory = historySamples.get(historySamples.size() - 1);
+			long lastDate = lastHistory.getTime() / timeFrame;
+			long currentDate = newSample.getTime() /  timeFrame;
+			if (lastDate  == currentDate) {
+				historySamples.remove(historySamples.size() - 1);
+			}
+		}
+		
+		PressureDataPoint updatedCurrent = new PressureDataPoint(System.currentTimeMillis(), average);
+		historySamples.add(updatedCurrent);
+		
+		// limit the recorded history
+		if (historySamples.size() > 60) {
+			historySamples.remove(0);
+		}
 	}
 	
-	public List<PressureDataPoint> get()
-	{
+	public List<PressureDataPoint> getHistory() {
+		return this.historySamples;
+	}
+	
+	public List<PressureDataPoint> get() {
 		return readingSamples;
 	}
 	
@@ -68,8 +100,7 @@ public class ReadingsData {
 		this.minValue = new PressureDataPoint(0, Float.MAX_VALUE);
 		this.maxValue = new PressureDataPoint(0, Float.MIN_VALUE);
 		
-		for (PressureDataPoint p : this.readingSamples) {
-			// TODO: Implement PressureDataPoint compare
+		for (PressureDataPoint p : this.historySamples) {
 			if (this.minValue.getValue() > p.getValue()) {
 				this.minValue = p;
 			} 
@@ -92,10 +123,16 @@ public class ReadingsData {
 		}
 	}
 	
+	public void setHistory(List<PressureDataPoint> data) 
+	{
+		this.historySamples.clear();
+		this.historySamples.addAll(data);		
+	}
+	
 	public float getTrend()
     {
 		// wait for a minimum reading samples
-		if (readingSamples.size() < 10) {
+		if (readingSamples.size() < 1) {
 			return 0;
 		}
 		

@@ -4,4 +4,6 @@
     <string name="app_name">Barometrum</string>
     <string name="minimumPressure">min</string>
     <string name="maximumPressure">max</string>
+    <string name="altimeterEnable">Enable Altimeter</string>
+    <string name="altimeterDisable">Disable Altimeter</string>
 </resources>
