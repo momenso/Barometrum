@@ -9,11 +9,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -28,6 +24,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Observable;
+import java.util.Observer;
 
 import momenso.barometrum.ReadingsData.PressureMode;
 import momenso.barometrum.gui.BlockView;
@@ -43,14 +41,12 @@ import com.androidplot.xy.SimpleXYSeries;
 
 public class PressureMonitor 
 	extends Activity 
-	implements SensorEventListener, LocationListener 
+	implements SensorEventListener, Observer
 {
-
 	private ReadingsData pressureData;
 	private XYSeries pressureSeries;
-	private boolean GPSRegistered = false;
 	private boolean barometerRegistered = false;
-	private float lastKnownAltitude = 0;
+	private Altimeter altimeter;
 	private Preferences preferences;
 	private long lastReadingMark = 0;
 		
@@ -60,10 +56,10 @@ public class PressureMonitor
     	super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
 
+        altimeter = new Altimeter(getApplicationContext());
         pressureData = new ReadingsData();
-        lastKnownAltitude = loadLastKnownAltitude();
         preferences = new Preferences(getApplicationContext());
-        pressureData.setMode(preferences.getPressureMode(), lastKnownAltitude);
+        pressureData.setMode(preferences.getPressureMode(), altimeter.getAltitude());
 
         // initialize pressure reading font
         CustomTextView currentReading = (CustomTextView) findViewById(R.id.currentReading);
@@ -80,7 +76,7 @@ public class PressureMonitor
         minReading.setLabelWidth(8);
         BlockView altitudeReading = (BlockView) findViewById(R.id.altitudeReading);
         altitudeReading.setTypeface(standardFont);
-        altitudeReading.setText(String.format("%.0f", lastKnownAltitude));
+        altitudeReading.setText(String.format("%.0f", altimeter.getAltitude()));
         altitudeReading.setLabelWidth(8);
         
         loadReadings();
@@ -91,10 +87,9 @@ public class PressureMonitor
 	protected void onPause() {
 		super.onPause();
 		
-		unregisterPressureSensor();
+		altimeter.disableGPS();
 		
-		LocationManager lm = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
-		lm.removeUpdates(this);
+		unregisterPressureSensor();
 		
 		saveReadings();
 	}
@@ -109,7 +104,6 @@ public class PressureMonitor
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
 		saveReadings();
-		saveLastKnownAltitude(lastKnownAltitude);
 		
 		super.onSaveInstanceState(outState);
 	}
@@ -149,12 +143,12 @@ public class PressureMonitor
     			
     		case R.id.MSLP:
     			preferences.setPressureMode(PressureMode.MSLP);
-    			pressureData.setMode(PressureMode.MSLP, lastKnownAltitude);
+    			pressureData.setMode(PressureMode.MSLP, altimeter.getAltitude());
     			item.setChecked(true);
     			return true;
 
     		case R.id.itemAltimeter:
-    			if (switchGPSSensor()) {
+    			if (altimeter.switchGPSSensor()) {
     				item.setTitle(R.string.altimeterDisable);
     			} else {
     				item.setTitle(R.string.altimeterEnable);
@@ -165,35 +159,10 @@ public class PressureMonitor
         		pressureData.clear();
     			return true;
 
-    			
     		default:
     			return super.onOptionsItemSelected(item);
     	}
     }
-        
-	private void saveLastKnownAltitude(float altitude)
-	{
-    	try {
-    		FileOutputStream fos = openFileOutput("altitude", Context.MODE_PRIVATE);
-    		ObjectOutputStream os = new ObjectOutputStream(fos);
-    		Float altitudeObject = altitude;
-    		os.writeObject(altitudeObject);
-		} catch (IOException e) { }
-	}
-
-	private float loadLastKnownAltitude() {
-    	try {
-    		FileInputStream fis = openFileInput("altitude");
-    		ObjectInputStream is = new ObjectInputStream(fis);
-    		
-    		Object item = is.readObject();
-    		if (item instanceof Float) {
-    			return (Float)item;
-    		}
-    	} catch (Exception ex) { }
-    	
-    	return 0;
-	}
     
     private void saveReadings() {
 
@@ -324,21 +293,6 @@ public class PressureMonitor
     	return barometerRegistered;
     }
     
-    private boolean switchGPSSensor() {
-    	
-    	LocationManager lm = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
-    	
-    	if (!GPSRegistered) {
-		    lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
-		    GPSRegistered = true;
-    	} else {
-    		lm.removeUpdates(this);
-    		GPSRegistered = false;
-    	}
-    	
-    	return GPSRegistered;
-    }
-    
     private void initializeGraph() {
     	XYPlot plot = (XYPlot)this.findViewById(R.id.mySimpleXYPlot);
     	if (plot != null) {
@@ -419,26 +373,14 @@ public class PressureMonitor
     	lastReadingMark = System.currentTimeMillis();
 	}
 
-	public void onLocationChanged(Location location) {
-		this.lastKnownAltitude = (float)location.getAltitude();
-		//float accuracy = location.getAccuracy();
-		saveLastKnownAltitude(lastKnownAltitude);
-		
-		BlockView altitudeText = (BlockView)findViewById(R.id.altitudeReading);
-		altitudeText.setText("Elevation\n" + String.format("%.0fm", this.lastKnownAltitude));
-		pressureData.setCurrentElevation(this.lastKnownAltitude);
-	}
-
-	public void onProviderDisabled(String provider) {
-		Log.v("ALTITUDE", "Provider disabled=" + provider);
-	}
-
-	public void onProviderEnabled(String provider) {
-		Log.v("ALTITUDE", "Provider enabled=" + provider);
-	}
-
-	public void onStatusChanged(String provider, int status, Bundle extras) {
-		Log.v("ALTITUDE", "Status changed=" + status);
+	public void update(Observable observable, Object data) {
+		if (observable.getClass() == Altimeter.class) {
+			float altitude = (Float)data;
+			pressureData.setCurrentElevation(altitude);
+			
+			BlockView altitudeText = (BlockView)findViewById(R.id.altitudeReading);
+			altitudeText.setText(String.format("%.0fm",altitude));
+		}
 	}
     
 }
