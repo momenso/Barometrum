@@ -5,10 +5,6 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -39,16 +35,14 @@ import com.androidplot.xy.XYPlot;
 import com.androidplot.xy.SimpleXYSeries;
 
 
-public class PressureMonitor 
-	extends Activity 
-	implements SensorEventListener, Observer
+public class PressureMonitor extends Activity 
+	implements Observer
 {
 	private ReadingsData pressureData;
 	private XYSeries pressureSeries;
-	private boolean barometerRegistered = false;
 	private Altimeter altimeter;
+	private Barometer barometer;
 	private Preferences preferences;
-	private long lastReadingMark = 0;
 		
 	/** Called when the activity is first created. */
     @Override
@@ -56,7 +50,11 @@ public class PressureMonitor
     	super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
 
+        barometer = new Barometer(getApplicationContext());
+        barometer.addObserver(this);
         altimeter = new Altimeter(getApplicationContext());
+        altimeter.addObserver(this);
+        
         pressureData = new ReadingsData();
         preferences = new Preferences(getApplicationContext());
         pressureData.setMode(preferences.getPressureMode(), altimeter.getAltitude());
@@ -88,8 +86,7 @@ public class PressureMonitor
 		super.onPause();
 		
 		altimeter.disableGPS();
-		
-		unregisterPressureSensor();
+		barometer.unregisterPressureSensor();
 		
 		saveReadings();
 	}
@@ -166,7 +163,7 @@ public class PressureMonitor
     
     private void saveReadings() {
 
-    	unregisterPressureSensor();
+    	barometer.unregisterPressureSensor();
     	
     	try {
     		persistReadings(pressureData.get(), "readings");
@@ -178,7 +175,7 @@ public class PressureMonitor
     		alertDialog.setMessage("Failed to save readings: " + e.getLocalizedMessage());
     		alertDialog.show();*/
 		} finally {
-			registerPressureSensor();
+			barometer.registerPressureSensor();
 		}
     }
     
@@ -194,7 +191,7 @@ public class PressureMonitor
     
     private void loadReadings() {
     	
-    	unregisterPressureSensor();
+    	barometer.unregisterPressureSensor();
     	
     	try {
     		
@@ -237,7 +234,7 @@ public class PressureMonitor
     }
     
     private void registerSensor() {
-	    registerPressureSensor();
+	    barometer.registerPressureSensor();
     	//loadReadings();
 	    
 	    /*final BlockView altimeter = (BlockView)this.findViewById(R.id.altitudeReading);
@@ -251,46 +248,12 @@ public class PressureMonitor
 			}
 		});*/
 	    
-	    final CustomTextView barometer = (CustomTextView)this.findViewById(R.id.currentReading);
-	    barometer.setOnClickListener(new View.OnClickListener() {
+	    final CustomTextView barometerReading = (CustomTextView)this.findViewById(R.id.currentReading);
+	    barometerReading.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
-				switchPressureSensor();
+				barometer.switchPressureSensor();
 			}
 		});
-    }
-    
-    private void registerPressureSensor() {
-    	SensorManager sm = (SensorManager)getSystemService(Context.SENSOR_SERVICE);
-    	Sensor barometer = sm.getDefaultSensor(Sensor.TYPE_PRESSURE);
-	    if (barometer != null) {
-	    	sm.registerListener(this, barometer, SensorManager.SENSOR_DELAY_NORMAL);
-	    }
-	    
-	    final CustomTextView barometerDisplay = 
-    		(CustomTextView)this.findViewById(R.id.currentReading);
-	    barometerDisplay.setText("...");
-    }
-    
-    private void unregisterPressureSensor() {
-		SensorManager sm = (SensorManager)getSystemService(Context.SENSOR_SERVICE); 
-		sm.unregisterListener(this);
-		
-		final CustomTextView barometerDisplay = 
-    		(CustomTextView)this.findViewById(R.id.currentReading);
-	    barometerDisplay.setText("Paused");
-	}
-    
-    private boolean switchPressureSensor() {
-    	
-    	if (!barometerRegistered) {
-		    registerPressureSensor();
-		    barometerRegistered = true;
-	    } else {
-	    	unregisterPressureSensor();
-		    barometerRegistered = false;
-	    }
-	    
-    	return barometerRegistered;
     }
     
     private void initializeGraph() {
@@ -342,44 +305,35 @@ public class PressureMonitor
     	
 		//Log.v("updateGraph", "time=" + (System.currentTimeMillis() - start));
     }
-    
-	public void onAccuracyChanged(Sensor sensor, int accuracy) {
-		// TODO Auto-generated method stub
-	}
-
-	public void onSensorChanged(SensorEvent event) {
-    	
-		if (System.currentTimeMillis() - lastReadingMark < 500)
-			return;
-		
-		float currentValue = event.values[0];
-		pressureData.add(currentValue);
-		
-		BlockView minimumValueText = (BlockView) findViewById(R.id.minimumReading);
-        minimumValueText.setText(String.format("%.2f", pressureData.getMinimum()));
-        BlockView maximumValueText = (BlockView) findViewById(R.id.maximumReading);
-    	maximumValueText.setText(String.format("%.2f", pressureData.getMaximum()));
-
-    	TextView currentValueText = (TextView) findViewById(R.id.currentReading);
-        currentValueText.setText(String.format("%.2f", pressureData.getAverage()));
-    	/*
-    	float trend = */pressureData.getTrend();
-    	/*float degrees = (float)Math.toDegrees(Math.atan(trend));
-    	ImageView arrow = (ImageView) findViewById(R.id.arrowImage);
-    	arrow.setRotation(degrees);
-    	*/
-    	updateGraph();
-    	
-    	lastReadingMark = System.currentTimeMillis();
-	}
 
 	public void update(Observable observable, Object data) {
 		if (observable.getClass() == Altimeter.class) {
+			
 			float altitude = (Float)data;
 			pressureData.setCurrentElevation(altitude);
 			
 			BlockView altitudeText = (BlockView)findViewById(R.id.altitudeReading);
 			altitudeText.setText(String.format("%.0fm",altitude));
+			
+		} else if (observable.getClass() == Barometer.class) {
+			
+			float pressure = (Float)data;
+			pressureData.add(pressure);
+			
+			BlockView minimumValueText = (BlockView) findViewById(R.id.minimumReading);
+	        minimumValueText.setText(String.format("%.2f", pressureData.getMinimum()));
+	        BlockView maximumValueText = (BlockView) findViewById(R.id.maximumReading);
+	    	maximumValueText.setText(String.format("%.2f", pressureData.getMaximum()));
+
+	    	TextView currentValueText = (TextView) findViewById(R.id.currentReading);
+	        currentValueText.setText(String.format("%.2f", pressureData.getAverage()));
+	    	/*
+	    	float trend = */pressureData.getTrend();
+	    	/*float degrees = (float)Math.toDegrees(Math.atan(trend));
+	    	ImageView arrow = (ImageView) findViewById(R.id.arrowImage);
+	    	arrow.setRotation(degrees);
+	    	*/
+	    	updateGraph();
 		}
 	}
     
