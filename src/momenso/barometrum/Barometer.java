@@ -20,7 +20,7 @@ public class Barometer extends Observable implements SensorEventListener {
 		this.lastReadingMark = 0;
 	}
 	
-	public void registerPressureSensor() {
+	public void enable() {
     	SensorManager sm = 
     		(SensorManager)context.getSystemService(Context.SENSOR_SERVICE);
     	Sensor barometer = sm.getDefaultSensor(Sensor.TYPE_PRESSURE);
@@ -33,7 +33,7 @@ public class Barometer extends Observable implements SensorEventListener {
 //	    barometerDisplay.setText("...");
     }
     
-	public void unregisterPressureSensor() {
+	public void disable() {
 		SensorManager sm = 
 			(SensorManager)context.getSystemService(Context.SENSOR_SERVICE); 
 		sm.unregisterListener(this);
@@ -46,10 +46,10 @@ public class Barometer extends Observable implements SensorEventListener {
     public boolean switchPressureSensor() {
     	
     	if (!barometerRegistered) {
-		    registerPressureSensor();
+		    enable();
 		    barometerRegistered = true;
 	    } else {
-	    	unregisterPressureSensor();
+	    	disable();
 		    barometerRegistered = false;
 	    }
 	    
@@ -71,4 +71,5 @@ public class Barometer extends Observable implements SensorEventListener {
 		setChanged();
 		notifyObservers(currentValue);
 	}
+	
 }

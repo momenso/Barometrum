@@ -12,14 +12,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
 
-import java.io.EOFException;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
 
@@ -38,8 +30,8 @@ import com.androidplot.xy.SimpleXYSeries;
 public class PressureMonitor extends Activity 
 	implements Observer
 {
-	private ReadingsData pressureData;
 	private XYSeries pressureSeries;
+	private ReadingsData pressureData;
 	private Altimeter altimeter;
 	private Barometer barometer;
 	private Preferences preferences;
@@ -50,13 +42,16 @@ public class PressureMonitor extends Activity
     	super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
 
-        barometer = new Barometer(getApplicationContext());
-        barometer.addObserver(this);
-        altimeter = new Altimeter(getApplicationContext());
+        Context context = getApplicationContext();
+        preferences = new Preferences(context);
+        
+        altimeter = new Altimeter(context);
         altimeter.addObserver(this);
         
-        pressureData = new ReadingsData();
-        preferences = new Preferences(getApplicationContext());
+        barometer = new Barometer(context);
+        barometer.addObserver(this);
+        
+        pressureData = new ReadingsData(context);
         pressureData.setMode(preferences.getPressureMode(), altimeter.getAltitude());
 
         // initialize pressure reading font
@@ -77,7 +72,6 @@ public class PressureMonitor extends Activity
         altitudeReading.setText(String.format("%.0f", altimeter.getAltitude()));
         altitudeReading.setLabelWidth(8);
         
-        loadReadings();
         initializeGraph();
     }
         
@@ -86,9 +80,9 @@ public class PressureMonitor extends Activity
 		super.onPause();
 		
 		altimeter.disableGPS();
-		barometer.unregisterPressureSensor();
+		barometer.disable();
 		
-		saveReadings();
+		pressureData.saveReadings();
 	}
 	
 	@Override
@@ -100,7 +94,8 @@ public class PressureMonitor extends Activity
 	
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
-		saveReadings();
+		barometer.disable();
+		pressureData.saveReadings();
 		
 		super.onSaveInstanceState(outState);
 	}
@@ -161,80 +156,8 @@ public class PressureMonitor extends Activity
     	}
     }
     
-    private void saveReadings() {
-
-    	barometer.unregisterPressureSensor();
-    	
-    	try {
-    		persistReadings(pressureData.get(), "readings");
-    		persistReadings(pressureData.getHistory(), "history");
-		} catch (IOException e) {
-			/*AlertDialog alertDialog;
-    		alertDialog = new AlertDialog.Builder(this).create();
-    		alertDialog.setTitle("Save");
-    		alertDialog.setMessage("Failed to save readings: " + e.getLocalizedMessage());
-    		alertDialog.show();*/
-		} finally {
-			barometer.registerPressureSensor();
-		}
-    }
-    
-    private void persistReadings(List<PressureDataPoint> data, String fileName) throws IOException {
-		
-    	FileOutputStream fos = openFileOutput(fileName, Context.MODE_PRIVATE);
-		ObjectOutputStream os = new ObjectOutputStream(fos);
-		
-		for(PressureDataPoint n : data) {
-			os.writeObject(n);
-		}
-    }
-    
-    private void loadReadings() {
-    	
-    	barometer.unregisterPressureSensor();
-    	
-    	try {
-    		
-    		List<PressureDataPoint> readings = restoreReadings("readings");
-    		this.pressureData.set(readings);
-    		
-    		List<PressureDataPoint> history = restoreReadings("history");
-    		this.pressureData.setHistory(history);
-    		
-    	} catch (Exception e) {
-    		/*AlertDialog alertDialog;
-    		alertDialog = new AlertDialog.Builder(this).create();
-    		alertDialog.setTitle("Load");
-    		alertDialog.setMessage("Failed to load readings: " + e.getLocalizedMessage());
-    		alertDialog.show();*/
-		} finally {
-			//registerPressureSensor();
-    		updateGraph();
-		}
-    }
-    
-    private List<PressureDataPoint> restoreReadings(String fileName) throws IOException, ClassNotFoundException {
-    	
-    	List<PressureDataPoint> data = new ArrayList<PressureDataPoint>();
-    	
-    	try {
-    		FileInputStream fis = openFileInput(fileName);
-    		ObjectInputStream is = new ObjectInputStream(fis);
-    		
-    		Object item;
-    		while ((item = is.readObject()) != null) {
-    			if (item instanceof PressureDataPoint)
-    			data.add((PressureDataPoint)item);
-    		}
-    	} catch (EOFException ex) {
-    		// happens at the end of the file
-    	}
-
-		return data;
-    }
-    
     private void registerSensor() {
-	    barometer.registerPressureSensor();
+	    barometer.enable();
     	//loadReadings();
 	    
 	    /*final BlockView altimeter = (BlockView)this.findViewById(R.id.altitudeReading);
@@ -251,7 +174,11 @@ public class PressureMonitor extends Activity
 	    final CustomTextView barometerReading = (CustomTextView)this.findViewById(R.id.currentReading);
 	    barometerReading.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
-				barometer.switchPressureSensor();
+				if (barometer.switchPressureSensor()) {
+					barometerReading.setTextColor(Color.WHITE);
+				} else {
+					barometerReading.setTextColor(Color.GRAY);
+				}
 			}
 		});
     }
@@ -266,8 +193,8 @@ public class PressureMonitor extends Activity
     	} else {
     		AlertDialog alertDialog;
     		alertDialog = new AlertDialog.Builder(this).create();
-    		alertDialog.setTitle("Real-time plot");
-    		alertDialog.setMessage("Failed to initialize real-time ploting.");
+    		alertDialog.setTitle("Graphics");
+    		alertDialog.setMessage("Failed to initialize graph ploting.");
     		alertDialog.show();
     	}
     }
@@ -290,8 +217,8 @@ public class PressureMonitor extends Activity
 			plot.addSeries(pressureSeries, pressureLineFormat);
 			
 			plot.setRangeBoundaries(
-					pressureData.getMinimum() - 0.1, 
-					pressureData.getMaximum() + 0.1, 
+					pressureData.getMinimum() - 0.2, 
+					pressureData.getMaximum() + 0.2, 
 					BoundaryMode.FIXED);
 
 			plot.redraw();
@@ -327,12 +254,14 @@ public class PressureMonitor extends Activity
 
 	    	TextView currentValueText = (TextView) findViewById(R.id.currentReading);
 	        currentValueText.setText(String.format("%.2f", pressureData.getAverage()));
-	    	/*
+	    	
+	        /*
 	    	float trend = */pressureData.getTrend();
 	    	/*float degrees = (float)Math.toDegrees(Math.atan(trend));
 	    	ImageView arrow = (ImageView) findViewById(R.id.arrowImage);
 	    	arrow.setRotation(degrees);
 	    	*/
+	    	
 	    	updateGraph();
 		}
 	}

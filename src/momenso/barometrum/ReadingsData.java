@@ -1,13 +1,22 @@
 package momenso.barometrum;
 
+import java.io.EOFException;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
+
+import android.content.Context;
 
 
 public class ReadingsData {
 	
 	public enum PressureMode { BAROMETRIC, MSLP };
 	
+	private Context context;
 	private List<PressureDataPoint> historySamples;
 	private List<PressureDataPoint> readingSamples;
 	private PressureDataPoint minValue = new PressureDataPoint(0, Float.MAX_VALUE);
@@ -17,10 +26,14 @@ public class ReadingsData {
 	private PressureMode mode = PressureMode.BAROMETRIC;
 	private float currentElevation = 0;
 
-	public ReadingsData() 
+	public ReadingsData(Context context) 
 	{
+		this.context = context;
+		
 		readingSamples = new ArrayList<PressureDataPoint>();
 		historySamples = new ArrayList<PressureDataPoint>();
+		
+		loadReadings();
 	}
 	
 	private float estimateElevationAt(float pressure) {
@@ -226,4 +239,74 @@ public class ReadingsData {
 		this.mode = mode;
 		this.currentElevation = altitude;
 	}
+	
+	
+	// -------------------------------------------------------------------------
+	// Persistence methods
+	// -------------------------------------------------------------------------
+	
+	public void saveReadings() {
+    	try {
+    		persistReadings(get(), "readings");
+    		persistReadings(getHistory(), "history");
+		} catch (IOException e) {
+			/*AlertDialog alertDialog;
+    		alertDialog = new AlertDialog.Builder(this).create();
+    		alertDialog.setTitle("Save");
+    		alertDialog.setMessage("Failed to save readings: " + e.getLocalizedMessage());
+    		alertDialog.show();*/
+		}
+    }
+    
+    private void persistReadings(List<PressureDataPoint> data, String fileName) throws IOException {
+		
+    	FileOutputStream fos = context.openFileOutput(fileName, Context.MODE_PRIVATE);
+		ObjectOutputStream os = new ObjectOutputStream(fos);
+		
+		for(PressureDataPoint n : data) {
+			os.writeObject(n);
+		}
+    }
+    
+    private void loadReadings() {
+    	
+    	try {
+    		
+    		List<PressureDataPoint> readings = restoreReadings("readings");
+    		set(readings);
+    		
+    		List<PressureDataPoint> history = restoreReadings("history");
+    		setHistory(history);
+    		
+    	} catch (Exception e) {
+    		/*AlertDialog alertDialog;
+    		alertDialog = new AlertDialog.Builder(this).create();
+    		alertDialog.setTitle("Load");
+    		alertDialog.setMessage("Failed to load readings: " + e.getLocalizedMessage());
+    		alertDialog.show();*/
+		} finally {
+			//registerPressureSensor();
+    		//updateGraph();
+		}
+    }
+    
+    private List<PressureDataPoint> restoreReadings(String fileName) throws IOException, ClassNotFoundException {
+    	
+    	List<PressureDataPoint> data = new ArrayList<PressureDataPoint>();
+    	
+    	try {
+    		FileInputStream fis = context.openFileInput(fileName);
+    		ObjectInputStream is = new ObjectInputStream(fis);
+    		
+    		Object item;
+    		while ((item = is.readObject()) != null) {
+    			if (item instanceof PressureDataPoint)
+    			data.add((PressureDataPoint)item);
+    		}
+    	} catch (EOFException ex) {
+    		// happens at the end of the file
+    	}
+
+		return data;
+    }
 }
