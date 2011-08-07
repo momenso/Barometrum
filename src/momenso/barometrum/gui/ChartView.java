@@ -96,7 +96,7 @@ public class ChartView extends TextView {
 		}
 		
 		// draw data columns
-		paint.setTextSize(getTextSize() / 2);
+		paint.setTextSize((getTextSize() * 5) / 6);
 		int columnWidth = ((rect.width() - 20) / this.data.size()) / 1;
 		int xPos = rect.left + 10 + columnWidth / 2;
 		for (PressureDataPoint bar : data) {
@@ -109,8 +109,12 @@ public class ChartView extends TextView {
 			paint.setColor(Color.WHITE);
 			Date date = new Date(bar.getTime());
 			String label = String.format("%02d:%02d", date.getHours(), date.getMinutes());
+			//String label = String.format("%dh", date.getHours());
+			canvas.drawText(label, barRect.centerX(), rect.bottom - 7, paint);
 			
-			canvas.drawText(label, barRect.centerX(), rect.bottom - 5, paint);
+			// TODO: implement value format conversion
+			//String value = String.format("%.2f", bar.getValue());
+			//canvas.drawText(value, barRect.centerX(), barRect.top + 5, paint);
 			
 			xPos += columnWidth;
 		}

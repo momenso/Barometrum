@@ -14,7 +14,8 @@ import android.content.Context;
 
 public class ReadingsData {
 	
-	public enum PressureMode { BAROMETRIC, MSLP };
+	public static enum PressureMode { BAROMETRIC, MSLP };
+	public static enum PressureUnit { Bar, Torr, Pascal };
 	
 	private Context context;
 	private List<PressureDataPoint> historySamples;
@@ -24,6 +25,7 @@ public class ReadingsData {
 
 	private float average = 0;
 	private PressureMode mode = PressureMode.BAROMETRIC;
+	private PressureUnit unit = PressureUnit.Bar;
 	private float currentElevation = 0;
 
 	public ReadingsData(Context context) 
@@ -77,11 +79,12 @@ public class ReadingsData {
 			}
 		}
 		
-		PressureDataPoint updatedCurrent = new PressureDataPoint(System.currentTimeMillis(), average);
+		PressureDataPoint updatedCurrent = 
+			new PressureDataPoint(System.currentTimeMillis(), average);
 		historySamples.add(updatedCurrent);
 		
 		// limit the recorded history
-		if (historySamples.size() > 60) {
+		if (historySamples.size() > 29) { // 59 
 			historySamples.remove(0);
 		}
 	}
@@ -98,11 +101,7 @@ public class ReadingsData {
 	{
 		List<Number> data = new ArrayList<Number>();
 		for (PressureDataPoint m : readingSamples) {
-			if (mode == PressureMode.MSLP) {
-				data.add(convertToBarometric(m.getValue()));
-			} else {
-				data.add(m.getValue());
-			}
+			data.add(getPressure(m.getValue()));
 		}
 
     	return data;
@@ -131,7 +130,6 @@ public class ReadingsData {
 		updateMinMax();
 		
 		if (currentElevation == 0 && readingSamples.size() == 0) {
-			// estimate elevation based on pressure
 			currentElevation = estimateElevationAt(data.get(data.size() - 1).getValue());
 		}
 	}
@@ -182,6 +180,34 @@ public class ReadingsData {
 		return mslp;
 	}
 	
+	private float convertToTorr(float bar) {
+		return bar * 0.75006167382F;
+	}
+	
+	private float convertToKiloPascal(float bar) {
+		return bar / 10; 
+	}
+	
+	private float getPressure(float rawValue) {
+		float value = 0;
+		
+		// mode
+		if (mode == PressureMode.MSLP) {
+			value = convertToBarometric(rawValue);	
+		} else {
+			value = rawValue;
+		}
+		
+		// unit
+		if (unit == PressureUnit.Pascal) {
+			value = convertToKiloPascal(value);
+		} else if (unit == PressureUnit.Torr) {
+			value = convertToTorr(value);
+		}
+
+		return value;
+	}
+	
 	public float getMinimum()
 	{
 		float value = minValue.getValue();
@@ -190,11 +216,7 @@ public class ReadingsData {
 			return 0;
 		}
 		
-		if (mode == PressureMode.MSLP) {
-			return convertToBarometric(value);
-		} else {
-			return value;
-		}
+		return getPressure(value);
 	}
 	
 	public float getMaximum()
@@ -205,24 +227,17 @@ public class ReadingsData {
 			return 0;
 		}
 		
-		if (mode == PressureMode.MSLP) {
-			return convertToBarometric(value);
-		} else {
-			return value;
-		}
+		return getPressure(value);
 	}
 	
 	public float getAverage() 
 	{
-		if (mode == PressureMode.MSLP) {
-			return convertToBarometric(average);
-		} else {
-			return average;
-		}
+		return getPressure(average);
 	}
 
 	public void clear() {
 		this.readingSamples.clear();
+		this.historySamples.clear();
 		this.minValue = new PressureDataPoint(0, Float.MAX_VALUE);
 		this.maxValue = new PressureDataPoint(0, Float.MIN_VALUE);
 	}
@@ -240,6 +255,30 @@ public class ReadingsData {
 		this.currentElevation = altitude;
 	}
 	
+	public void setUnit(PressureUnit unit) {
+		this.unit = unit;
+	}
+	
+	public PressureUnit getUnit() {
+		return this.unit;
+	}
+	
+	public String getUnitName() {
+		switch (unit) {
+			case Bar:
+				return "mb";
+				
+			case Torr:
+				return "mmHg";
+				
+			case Pascal:
+				return "kPa";
+				
+			default:
+				return "mb";
+		}
+		
+	}
 	
 	// -------------------------------------------------------------------------
 	// Persistence methods

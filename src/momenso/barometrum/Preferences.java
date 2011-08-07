@@ -7,12 +7,15 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
 import android.content.Context;
-import android.util.Log;
+
 import momenso.barometrum.ReadingsData.PressureMode;
+import momenso.barometrum.ReadingsData.PressureUnit;
+
 
 public class Preferences {
 
 	private PressureMode pressureMode;
+	private PressureUnit pressureUnit;
 	private Context context;
 	
 	public Preferences(Context context) {
@@ -26,9 +29,19 @@ public class Preferences {
 		
 		savePreferences();
 	}
-	
+		
 	public PressureMode getPressureMode() {
 		return this.pressureMode;
+	}
+	
+	public void setPressureUnit(PressureUnit unit) {
+		this.pressureUnit = unit;
+		
+		savePreferences();
+	}
+
+	public PressureUnit getPressureUnit() {
+		return this.pressureUnit;
 	}
 	
     private void savePreferences() {
@@ -36,9 +49,8 @@ public class Preferences {
     		FileOutputStream fos = context.openFileOutput("preferences", Context.MODE_PRIVATE);
     		ObjectOutputStream os = new ObjectOutputStream(fos);
     		os.writeObject(pressureMode);
-		} catch (IOException e) { Log.v("PREFS", "Failed: " + e.getMessage()); }
-		
-		Log.v("PREFS", "Saved as: " + pressureMode);
+    		os.writeObject(pressureUnit);
+		} catch (IOException e) { }
     }
     
     private void restorePreferences() {
@@ -49,14 +61,19 @@ public class Preferences {
     		Object item = is.readObject();
     		if (item instanceof PressureMode) {
     			pressureMode = (PressureMode)item;
-    			
-    			return;
     		}
-    	} catch (Exception ex) { Log.v("PREFS", "Failed: " + ex.getMessage()); }
+
+    		item = is.readObject();
+    		if (item instanceof PressureUnit) {
+    			pressureUnit = (PressureUnit)item;
+    		}
+    		
+    		return;
+    		
+    	} catch (Exception ex) { }
     	
     	pressureMode = PressureMode.BAROMETRIC;
-    	
-    	Log.v("PREFS", "Restore to: " + pressureMode);
+    	pressureUnit = PressureUnit.Bar;
     }
 
 }

@@ -3,6 +3,7 @@ package momenso.barometrum;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
@@ -15,7 +16,6 @@ import android.widget.TextView;
 import java.util.Observable;
 import java.util.Observer;
 
-import momenso.barometrum.ReadingsData.PressureMode;
 import momenso.barometrum.gui.BlockView;
 import momenso.barometrum.gui.ChartView;
 import momenso.barometrum.gui.CustomTextView;
@@ -53,6 +53,7 @@ public class PressureMonitor extends Activity
         
         pressureData = new ReadingsData(context);
         pressureData.setMode(preferences.getPressureMode(), altimeter.getAltitude());
+        pressureData.setUnit(preferences.getPressureUnit());
 
         // initialize pressure reading font
         CustomTextView currentReading = (CustomTextView) findViewById(R.id.currentReading);
@@ -64,9 +65,11 @@ public class PressureMonitor extends Activity
         BlockView maxReading = (BlockView) findViewById(R.id.maximumReading);
         maxReading.setTypeface(standardFont);
         maxReading.setLabelWidth(8);
+        maxReading.setUnit(pressureData.getUnitName());
         BlockView minReading = (BlockView) findViewById(R.id.minimumReading);
         minReading.setTypeface(standardFont);
         minReading.setLabelWidth(8);
+		minReading.setUnit(pressureData.getUnitName());
         BlockView altitudeReading = (BlockView) findViewById(R.id.altitudeReading);
         altitudeReading.setTypeface(standardFont);
         altitudeReading.setText(String.format("%.0f", altimeter.getAltitude()));
@@ -104,21 +107,7 @@ public class PressureMonitor extends Activity
     public boolean onCreateOptionsMenu(Menu menu) {
     	MenuInflater inflater = getMenuInflater();
     	inflater.inflate(R.menu.menu_options, menu);
-    	
-    	PressureMode mode = preferences.getPressureMode();
-    	MenuItem item;
-    	switch (mode) {
-    		case BAROMETRIC:
-    			item = menu.findItem(R.id.Barometric);
-    			item.setChecked(true);
-    			break;
-    			
-    		case MSLP:
-    			item = menu.findItem(R.id.MSLP);
-    			item.setChecked(true);
-    			break;
-    	}
-    	
+    	    	
     	return true;
     }
     
@@ -127,18 +116,14 @@ public class PressureMonitor extends Activity
     	
     	switch (item.getItemId()) {
     			
-    		case R.id.Barometric:
-    			preferences.setPressureMode(PressureMode.BAROMETRIC);
-    			pressureData.setMode(PressureMode.BAROMETRIC);
-    			item.setChecked(true);
+    		case R.id.itemBarometerMode:
+    			selectBarometerMode();
     			return true;
     			
-    		case R.id.MSLP:
-    			preferences.setPressureMode(PressureMode.MSLP);
-    			pressureData.setMode(PressureMode.MSLP, altimeter.getAltitude());
-    			item.setChecked(true);
+    		case R.id.itemPressureUnit:
+    			selectPressureUnit();
     			return true;
-
+    			
     		case R.id.itemAltimeter:
     			if (altimeter.switchGPSSensor()) {
     				item.setTitle(R.string.altimeterDisable);
@@ -154,6 +139,58 @@ public class PressureMonitor extends Activity
     		default:
     			return super.onOptionsItemSelected(item);
     	}
+    }
+    
+    private void selectPressureUnit() {
+    	final CharSequence[] items = { "Bar", "Torr", "Pascal" };
+    	
+    	AlertDialog.Builder builder = new AlertDialog.Builder(this);
+    	builder.setTitle("Pressure Unit");
+    	builder.setItems(items, new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int item) {
+				//Toast.makeText(getApplicationContext(), items[item], Toast.LENGTH_SHORT).show();
+						        
+				if (item == 0) {
+					pressureData.setUnit(ReadingsData.PressureUnit.Bar);
+					preferences.setPressureUnit(ReadingsData.PressureUnit.Bar);
+				} else if (item == 1) {
+					pressureData.setUnit(ReadingsData.PressureUnit.Torr);
+					preferences.setPressureUnit(ReadingsData.PressureUnit.Torr);
+				} else if (item == 2) {
+					pressureData.setUnit(ReadingsData.PressureUnit.Pascal);
+					preferences.setPressureUnit(ReadingsData.PressureUnit.Pascal);
+				}
+				
+		        BlockView maxReading = (BlockView) findViewById(R.id.maximumReading);
+				maxReading.setUnit(pressureData.getUnitName());
+				BlockView minReading = (BlockView) findViewById(R.id.minimumReading);
+				minReading.setUnit(pressureData.getUnitName());
+
+			}
+		});
+    	AlertDialog alert = builder.create();
+    	alert.show();
+    }
+    
+    private void selectBarometerMode() {
+    	final CharSequence[] items = { "Barometric", "Mean sea level" };
+    	
+    	AlertDialog.Builder builder = new AlertDialog.Builder(this);
+    	builder.setTitle("Reading Mode");
+    	builder.setItems(items, new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int item) {
+				//Toast.makeText(getApplicationContext(), items[item], Toast.LENGTH_SHORT).show();
+				if (item == 0) {
+					pressureData.setMode(ReadingsData.PressureMode.BAROMETRIC);
+					preferences.setPressureMode(ReadingsData.PressureMode.BAROMETRIC);
+				} else if (item == 1) {
+					pressureData.setMode(ReadingsData.PressureMode.MSLP);
+					preferences.setPressureMode(ReadingsData.PressureMode.MSLP);
+				}				
+			}
+		});
+    	AlertDialog alert = builder.create();
+    	alert.show();
     }
     
     private void registerSensor() {

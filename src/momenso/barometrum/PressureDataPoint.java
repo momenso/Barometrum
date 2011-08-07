@@ -73,6 +73,4 @@ public class PressureDataPoint implements Serializable {
 		return true;
 	}
 	
-	
-	
 }

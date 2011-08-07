@@ -63,9 +63,7 @@ public class LabeledTextView extends TextView {
 
 		Rect bounds = new Rect();
 		
-		try
-		{
-		
+		try {
 			if (this.label != null) {
 				paint.setTextSize(originalTextSize);
 				//paint.getTextBounds(this.label, 0, this.label.length(), bounds);
