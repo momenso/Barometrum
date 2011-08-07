@@ -7,35 +7,49 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+
+import momenso.barometrum.PressureDataPoint.PressureMode;
+import momenso.barometrum.PressureDataPoint.PressureUnit;
 
 import android.content.Context;
 
 
 public class ReadingsData {
-	
-	public static enum PressureMode { BAROMETRIC, MSLP };
-	public static enum PressureUnit { Bar, Torr, Pascal };
-	
+		
 	private Context context;
 	private List<PressureDataPoint> historySamples;
 	private List<PressureDataPoint> readingSamples;
-	private PressureDataPoint minValue = new PressureDataPoint(0, Float.MAX_VALUE);
-	private PressureDataPoint maxValue = new PressureDataPoint(0, Float.MIN_VALUE);
+	private PressureDataPoint minValue;
+	private PressureDataPoint maxValue;
 
-	private float average = 0;
-	private PressureMode mode = PressureMode.BAROMETRIC;
-	private PressureUnit unit = PressureUnit.Bar;
-	private float currentElevation = 0;
+	private PressureDataPoint average;
+	private static PressureMode mode = PressureMode.BAROMETRIC;
+	private static PressureUnit unit = PressureUnit.Bar;
+	private static float currentElevation = 0;
+	private static ReadingsData instance;
 
-	public ReadingsData(Context context) 
+	private ReadingsData(Context context) 
 	{
 		this.context = context;
+		this.average = new PressureDataPoint();
 		
 		readingSamples = new ArrayList<PressureDataPoint>();
 		historySamples = new ArrayList<PressureDataPoint>();
 		
+		initializeMinMax();
 		loadReadings();
+	}
+	
+	public static ReadingsData getInstance(Context context) {
+		if (instance != null) {
+			instance.context = context;
+		} else {
+			instance = new ReadingsData(context);
+		}
+		
+		return instance;
 	}
 	
 	private float estimateElevationAt(float pressure) {
@@ -57,6 +71,8 @@ public class ReadingsData {
 		readingSamples.add(newSample);
 		
 		// clean old reading samples
+		// basically keeps only readings concerning
+		// the current time frame 
 		if (readingSamples.size() > 0) {
 			PressureDataPoint first = readingSamples.get(0);
 			long firstDate = first.getTime() / timeFrame;
@@ -68,7 +84,10 @@ public class ReadingsData {
 		
 		updateStatistics();
 		
-    	//update history
+    	// update history
+		// removes obsolete historic reading since
+		// an updated reading for the current time frame
+		// is available
 		if (historySamples.size() > 0)
 		{
 			PressureDataPoint lastHistory = historySamples.get(historySamples.size() - 1);
@@ -80,11 +99,11 @@ public class ReadingsData {
 		}
 		
 		PressureDataPoint updatedCurrent = 
-			new PressureDataPoint(System.currentTimeMillis(), average);
+			new PressureDataPoint(System.currentTimeMillis(), average.getRawValue());
 		historySamples.add(updatedCurrent);
 		
 		// limit the recorded history
-		if (historySamples.size() > 29) { // 59 
+		if (historySamples.size() > 59) { // 59 
 			historySamples.remove(0);
 		}
 	}
@@ -101,31 +120,46 @@ public class ReadingsData {
 	{
 		List<Number> data = new ArrayList<Number>();
 		for (PressureDataPoint m : readingSamples) {
-			data.add(getPressure(m.getValue()));
+			data.add(m.getValue(mode, unit, currentElevation));
 		}
 
     	return data;
 	}
 	
+	private void initializeMinMax() {
+		if (this.minValue == null)
+			this.minValue = new PressureDataPoint(0, Float.MAX_VALUE);
+		if (this.maxValue == null)
+			this.maxValue = new PressureDataPoint(0, Float.MIN_VALUE);	
+	}
+	
+	private void updateMinMax(PressureDataPoint data) {
+		if (this.minValue.getRawValue() > data.getRawValue()) {
+			this.minValue = data;
+		} 
+		if (this.maxValue.getRawValue() < data.getRawValue()) {
+			this.maxValue = data;
+		}
+	}
+	
 	private void updateStatistics() 
-	{
-		this.minValue = new PressureDataPoint(0, Float.MAX_VALUE);
-		this.maxValue = new PressureDataPoint(0, Float.MIN_VALUE);
-		
-		float sumValues = 0;
+	{		
+		// updates min/max based on reading history
 		for (PressureDataPoint p : this.historySamples) {
-			float value = p.getValue();
-			sumValues += value;
-			
-			if (this.minValue.getValue() > value) {
-				this.minValue = p;
-			} 
-			if (this.maxValue.getValue() < value) {
-				this.maxValue = p;
-			}
+			updateMinMax(p);
 		}
 		
-		this.average = sumValues / this.historySamples.size();
+		// computes the current average reading
+		float sumValues = 0;
+		for (PressureDataPoint p : this.readingSamples) {
+			float value = p.getRawValue();
+			sumValues += value;
+		}
+		
+		this.average.setValue(sumValues / this.readingSamples.size());
+		this.average.setTime(System.currentTimeMillis());
+		
+		updateMinMax(average);
 	}
 		
 	/*public float getTrend()
@@ -166,7 +200,7 @@ public class ReadingsData {
 		updateStatistics();
 		
 		if (currentElevation == 0 && readingSamples.size() == 0) {
-			currentElevation = estimateElevationAt(data.get(data.size() - 1).getValue());
+			currentElevation = estimateElevationAt(data.get(data.size() - 1).getRawValue());
 		}
 	}
 	
@@ -176,70 +210,51 @@ public class ReadingsData {
 		this.historySamples.addAll(data);		
 	}
 	
-	private float convertToBarometric(float barometricPressure)
-	{
-		double localStandardPressure = 
-			101325.0F * Math.pow(1.0F - 0.0000225577F * currentElevation, 5.25588F);
-		double pressureDifference = 101325 - localStandardPressure;			
-		float mslp = barometricPressure + (float)pressureDifference / 100;
-		
-		return mslp;
-	}
-	
-	private float convertToTorr(float bar) {
-		return bar * 0.75006167382F;
-	}
-	
-	private float convertToKiloPascal(float bar) {
-		return bar / 10; 
-	}
-	
-	private float getPressure(float rawValue) {
-		float value = 0;
-		
-		// mode
-		if (mode == PressureMode.MSLP) {
-			value = convertToBarometric(rawValue);	
-		} else {
-			value = rawValue;
-		}
-		
-		// unit
-		if (unit == PressureUnit.Pascal) {
-			value = convertToKiloPascal(value);
-		} else if (unit == PressureUnit.Torr) {
-			value = convertToTorr(value);
-		}
-
-		return value;
-	}
-	
 	public float getMinimum()
-	{
-		float value = minValue.getValue();
+	{			
+		return minValue.getValue(mode, unit, currentElevation);
+	}
+	
+	public Date getDateMinimum() {
+		Date date = new Date(minValue.getTime());
 		
-		if (value == Float.MAX_VALUE) {
-			return 0;
-		}
-		
-		return getPressure(value);
+		return date;
 	}
 	
 	public float getMaximum()
 	{
-		float value = maxValue.getValue();
+		return maxValue.getValue(mode, unit, currentElevation);
+	}
+	
+	public PressureDataPoint getMaximumValue() {
+		return maxValue;
+	}
+	
+	public PressureDataPoint getMinimumValue() {
+		return minValue;
+	}
+	
+	public Date getDateMaximum() {
+		Date date = new Date(maxValue.getTime());
 		
-		if (value == Float.MIN_VALUE) {
-			return 0;
-		}
-		
-		return getPressure(value);
+		return date;
 	}
 	
 	public float getAverage() 
 	{
-		return getPressure(average);
+		return average.getValue(mode, unit, currentElevation);
 	}
+	
+	public static float getReadingValue(PressureDataPoint value) {
+		return value.getValue(mode, unit, currentElevation);
+	}
+	
+	/*public static String getValueString(PressureDataPoint value) {
+		String reading = String.format("%.2f%s",
+				getReadingValue(value), getUnitName());
+		
+		return reading;
+	}*/
 
 	public void clear() {
 		this.readingSamples.clear();
@@ -249,27 +264,27 @@ public class ReadingsData {
 	}
 
 	public void setCurrentElevation(float altitude) {
-		this.currentElevation = altitude;
+		ReadingsData.currentElevation = altitude;
 	}
 
 	public void setMode(PressureMode mode) {
-		this.mode = mode;
+		ReadingsData.mode = mode;
 	}
 
 	public void setMode(PressureMode mode, float altitude) {
-		this.mode = mode;
-		this.currentElevation = altitude;
+		ReadingsData.mode = mode;
+		ReadingsData.currentElevation = altitude;
 	}
 	
 	public void setUnit(PressureUnit unit) {
-		this.unit = unit;
+		ReadingsData.unit = unit;
 	}
 	
 	public PressureUnit getUnit() {
-		return this.unit;
+		return ReadingsData.unit;
 	}
 	
-	public String getUnitName() {
+	public static String getUnitName() {
 		switch (unit) {
 			case Bar:
 				return "mb";
@@ -283,7 +298,6 @@ public class ReadingsData {
 			default:
 				return "mb";
 		}
-		
 	}
 	
 	// -------------------------------------------------------------------------
@@ -314,15 +328,12 @@ public class ReadingsData {
     }
     
     private void loadReadings() {
-    	
     	try {
-    		
     		List<PressureDataPoint> readings = restoreReadings("readings");
     		set(readings);
     		
     		List<PressureDataPoint> history = restoreReadings("history");
     		setHistory(history);
-    		
     	} catch (Exception e) {
     		/*AlertDialog alertDialog;
     		alertDialog = new AlertDialog.Builder(this).create();
@@ -349,7 +360,7 @@ public class ReadingsData {
     			data.add((PressureDataPoint)item);
     		}
     	} catch (EOFException ex) {
-    		// happens at the end of the file
+    		// happens when reading reaches end of the file
     	}
 
 		return data;

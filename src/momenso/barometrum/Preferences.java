@@ -6,11 +6,10 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
+import momenso.barometrum.PressureDataPoint.PressureMode;
+import momenso.barometrum.PressureDataPoint.PressureUnit;
+
 import android.content.Context;
-
-import momenso.barometrum.ReadingsData.PressureMode;
-import momenso.barometrum.ReadingsData.PressureUnit;
-
 
 public class Preferences {
 
