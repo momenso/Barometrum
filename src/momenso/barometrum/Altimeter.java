@@ -18,11 +18,11 @@ public class Altimeter extends Observable implements LocationListener {
 	
 	private Context context;
 	private float altitude;
-	private boolean gpsActive;
+	private boolean isSensorActive;
 	
 	public Altimeter(Context context) {
 		this.context = context;
-		this.gpsActive = false;
+		this.isSensorActive = false;
 		this.altitude = retreiveAltitude();
 	}
 
@@ -66,23 +66,25 @@ public class Altimeter extends Observable implements LocationListener {
     	return 0;
 	}
 	
-	public boolean switchGPSSensor() {
-    	
-    	LocationManager lm = 
-    		(LocationManager)context.getSystemService(Context.LOCATION_SERVICE);
-    	
-    	if (!gpsActive) {
-		    lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
-		    gpsActive = true;
+	public boolean switchSensor() {
+    	if (!isSensorActive) {
+    		enable();
+		    isSensorActive = true;
     	} else {
-    		lm.removeUpdates(this);
-    		gpsActive = false;
+    		disable();
+    		isSensorActive = false;
     	}
     	
-    	return gpsActive;
+    	return isSensorActive;
     }
 
-	public void disableGPS() {
+	public void enable() {
+    	LocationManager lm = 
+    		(LocationManager)context.getSystemService(Context.LOCATION_SERVICE);
+	    lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);		
+	}
+	
+	public void disable() {
 		LocationManager lm = 
 			(LocationManager)context.getSystemService(Context.LOCATION_SERVICE);
 		lm.removeUpdates(this);

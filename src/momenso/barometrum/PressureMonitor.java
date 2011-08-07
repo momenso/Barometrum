@@ -82,7 +82,7 @@ public class PressureMonitor extends Activity
 	protected void onPause() {
 		super.onPause();
 		
-		altimeter.disableGPS();
+		altimeter.disable();
 		barometer.disable();
 		
 		pressureData.saveReadings();
@@ -125,7 +125,7 @@ public class PressureMonitor extends Activity
     			return true;
     			
     		case R.id.itemAltimeter:
-    			if (altimeter.switchGPSSensor()) {
+    			if (altimeter.switchSensor()) {
     				item.setTitle(R.string.altimeterDisable);
     			} else {
     				item.setTitle(R.string.altimeterEnable);
@@ -211,7 +211,7 @@ public class PressureMonitor extends Activity
 	    final CustomTextView barometerReading = (CustomTextView)this.findViewById(R.id.currentReading);
 	    barometerReading.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
-				if (barometer.switchPressureSensor()) {
+				if (barometer.switchSensor()) {
 					barometerReading.setTextColor(Color.WHITE);
 				} else {
 					barometerReading.setTextColor(Color.GRAY);

@@ -11,13 +11,13 @@ import android.hardware.SensorManager;
 public class Barometer extends Observable implements SensorEventListener {
 	
 	private Context context;
-	private long lastReadingMark;
-	private boolean barometerRegistered;
+	private long lastReadingTime;
+	private boolean isSensorActive;
 	
 	public Barometer(Context context) {
 		this.context = context;
-		this.barometerRegistered = false;
-		this.lastReadingMark = 0;
+		this.isSensorActive = false;
+		this.lastReadingTime = 0;
 	}
 	
 	public void enable() {
@@ -27,45 +27,37 @@ public class Barometer extends Observable implements SensorEventListener {
 	    if (barometer != null) {
 	    	sm.registerListener(this, barometer, SensorManager.SENSOR_DELAY_NORMAL);
 	    }
-	    
-//	    final CustomTextView barometerDisplay = 
-//    		(CustomTextView)this.findViewById(R.id.currentReading);
-//	    barometerDisplay.setText("...");
     }
     
 	public void disable() {
 		SensorManager sm = 
 			(SensorManager)context.getSystemService(Context.SENSOR_SERVICE); 
 		sm.unregisterListener(this);
-		
-//		final CustomTextView barometerDisplay = 
-//    		(CustomTextView)this.findViewById(R.id.currentReading);
-//	    barometerDisplay.setText("Paused");
 	}
     
-    public boolean switchPressureSensor() {
+    public boolean switchSensor() {
     	
-    	if (!barometerRegistered) {
+    	if (!isSensorActive) {
 		    enable();
-		    barometerRegistered = true;
+		    isSensorActive = true;
 	    } else {
 	    	disable();
-		    barometerRegistered = false;
+		    isSensorActive = false;
 	    }
 	    
-    	return barometerRegistered;
+    	return isSensorActive;
     }
     
 	public void onAccuracyChanged(Sensor sensor, int accuracy) {
-		// TODO Auto-generated method stub
+		// not interested in this event
 	}
 
 	public void onSensorChanged(SensorEvent event) {
     	
-		if (System.currentTimeMillis() - lastReadingMark < 500)
+		if (System.currentTimeMillis() - lastReadingTime < 500)
 			return;
 		
-		this.lastReadingMark = System.currentTimeMillis();
+		this.lastReadingTime = System.currentTimeMillis();
 		Float currentValue = event.values[0];
 		
 		setChanged();

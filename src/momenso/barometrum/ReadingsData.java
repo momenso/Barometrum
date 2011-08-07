@@ -66,7 +66,7 @@ public class ReadingsData {
 			}
 		}
 		
-		updateMinMax();
+		updateStatistics();
 		
     	//update history
 		if (historySamples.size() > 0)
@@ -107,40 +107,28 @@ public class ReadingsData {
     	return data;
 	}
 	
-	private void updateMinMax() 
+	private void updateStatistics() 
 	{
 		this.minValue = new PressureDataPoint(0, Float.MAX_VALUE);
 		this.maxValue = new PressureDataPoint(0, Float.MIN_VALUE);
 		
+		float sumValues = 0;
 		for (PressureDataPoint p : this.historySamples) {
-			if (this.minValue.getValue() > p.getValue()) {
+			float value = p.getValue();
+			sumValues += value;
+			
+			if (this.minValue.getValue() > value) {
 				this.minValue = p;
 			} 
-			if (this.maxValue.getValue() < p.getValue()) {
+			if (this.maxValue.getValue() < value) {
 				this.maxValue = p;
 			}
 		}
-	}
-	
-	public void set(List<PressureDataPoint> data) 
-	{
-		this.readingSamples.clear();
-		this.readingSamples.addAll(data);
-
-		updateMinMax();
 		
-		if (currentElevation == 0 && readingSamples.size() == 0) {
-			currentElevation = estimateElevationAt(data.get(data.size() - 1).getValue());
-		}
+		this.average = sumValues / this.historySamples.size();
 	}
-	
-	public void setHistory(List<PressureDataPoint> data) 
-	{
-		this.historySamples.clear();
-		this.historySamples.addAll(data);		
-	}
-	
-	public float getTrend()
+		
+	/*public float getTrend()
     {
 		// wait for a minimum reading samples
 		if (readingSamples.size() < 1) {
@@ -168,7 +156,25 @@ public class ReadingsData {
     	
     	return (last.getValue() - mark.getValue()) / 
     		((last.getTime() - mark.getTime()) / 2000);
-    }
+    }*/
+	
+	public void set(List<PressureDataPoint> data)
+	{
+		this.readingSamples.clear();
+		this.readingSamples.addAll(data);
+
+		updateStatistics();
+		
+		if (currentElevation == 0 && readingSamples.size() == 0) {
+			currentElevation = estimateElevationAt(data.get(data.size() - 1).getValue());
+		}
+	}
+	
+	public void setHistory(List<PressureDataPoint> data) 
+	{
+		this.historySamples.clear();
+		this.historySamples.addAll(data);		
+	}
 	
 	private float convertToBarometric(float barometricPressure)
 	{
