@@ -103,7 +103,7 @@ public class ReadingsData {
 		historySamples.add(updatedCurrent);
 		
 		// limit the recorded history
-		if (historySamples.size() > 59) { // 59 
+		if (historySamples.size() > 44) { // 59 
 			historySamples.remove(0);
 		}
 	}

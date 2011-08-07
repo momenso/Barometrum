@@ -262,6 +262,13 @@ public class PressureMonitor extends Activity
     		plot.disableAllMarkup();
     		plot.setDomainLabel("");
     		plot.setRangeLabel("");
+    		plot.getGraphWidget().getGridBackgroundPaint().setColor(Color.rgb(30, 30, 30));
+    		plot.getGraphWidget().getGridLinePaint().setColor(Color.rgb(150, 150, 150));
+    		plot.getGraphWidget().getDomainOriginLinePaint().setColor(Color.rgb(150, 150, 150));
+    		plot.getGraphWidget().getBackgroundPaint().setColor(Color.rgb(30, 30, 30));
+    		plot.getBackgroundPaint().setColor(Color.rgb(30, 30, 30));
+    		plot.getBorderPaint().setColor(Color.rgb(150, 150, 150));
+    		plot.getBorderPaint().setStrokeWidth(3);
     	} else {
     		AlertDialog alertDialog = new AlertDialog.Builder(this).create();
     		alertDialog.setTitle("Graphics");

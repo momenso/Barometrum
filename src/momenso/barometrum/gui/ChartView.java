@@ -14,7 +14,6 @@ import android.graphics.Paint.Style;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.widget.TextView;
 
 public class ChartView extends TextView {
@@ -69,7 +68,7 @@ public class ChartView extends TextView {
 		canvas.drawRoundRect(borderRect, 15, 15, paint);
 		
 		paint.setColor(Color.rgb(150, 150, 150));		
-		paint.setStrokeWidth(3);		
+		paint.setStrokeWidth(3);
 		paint.setStyle(Style.STROKE);
 		canvas.drawRoundRect(borderRect, 15, 15, paint);
 		paint.setStrokeWidth(1);
