@@ -28,6 +28,7 @@ public class ReadingsData {
 	private static PressureMode mode = PressureMode.BAROMETRIC;
 	private static PressureUnit unit = PressureUnit.Bar;
 	private static float currentElevation = 0;
+	private static int loggingInterval = 60000;
 	private static ReadingsData instance;
 
 	private ReadingsData(Context context) 
@@ -59,9 +60,6 @@ public class ReadingsData {
 
 	public void add(float pressureValue) 
 	{
-		//long timeFrame = 3600000; // hour
-		long timeFrame = 60000; // minute
-		
 		if (currentElevation == 0 && readingSamples.size() == 0) {
 			currentElevation = estimateElevationAt(pressureValue);
 		}
@@ -75,8 +73,8 @@ public class ReadingsData {
 		// the current time frame 
 		if (readingSamples.size() > 0) {
 			PressureDataPoint first = readingSamples.get(0);
-			long firstDate = first.getTime() / timeFrame;
-			long currentDate = System.currentTimeMillis() / timeFrame;
+			long firstDate = first.getTime() / loggingInterval;
+			long currentDate = System.currentTimeMillis() / loggingInterval;
 			if (firstDate < currentDate) {
 				readingSamples.remove(0);
 			}
@@ -91,8 +89,8 @@ public class ReadingsData {
 		if (historySamples.size() > 0)
 		{
 			PressureDataPoint lastHistory = historySamples.get(historySamples.size() - 1);
-			long lastDate = lastHistory.getTime() / timeFrame;
-			long currentDate = newSample.getTime() /  timeFrame;
+			long lastDate = lastHistory.getTime() / loggingInterval;
+			long currentDate = newSample.getTime() /  loggingInterval;
 			if (lastDate  == currentDate) {
 				historySamples.remove(historySamples.size() - 1);
 			}
@@ -276,6 +274,10 @@ public class ReadingsData {
 		ReadingsData.currentElevation = altitude;
 	}
 	
+	public void setHistoryInterval(int interval) {
+		loggingInterval = interval;
+	}
+
 	public void setUnit(PressureUnit unit) {
 		ReadingsData.unit = unit;
 	}
@@ -365,4 +367,5 @@ public class ReadingsData {
 
 		return data;
     }
+
 }

@@ -13,6 +13,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.Observable;
 import java.util.Observer;
@@ -187,6 +188,10 @@ public class PressureMonitor extends Activity
     			selectPressureUnit();
     			return true;
     			
+    		case R.id.itemLogInterval:
+    			selectLoggingInterval();
+    			return true;
+    			
     		case R.id.itemAltimeter:
     			if (altimeter.switchSensor()) {
     				item.setTitle(R.string.altimeterDisable);
@@ -255,7 +260,29 @@ public class PressureMonitor extends Activity
     	AlertDialog alert = builder.create();
     	alert.show();
     }
-        
+    
+    private void selectLoggingInterval() {
+    	final CharSequence[] items = { "1 min", "5 min", "30 min" };
+    	
+    	AlertDialog.Builder builder = new AlertDialog.Builder(this);
+    	builder.setTitle("Logging Interval");
+    	builder.setItems(items, new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int item) {
+				int interval = 60000;
+				if (item == 1) {
+					interval *= 5;
+				} else if (item == 2) {
+					interval *= 30;
+				}
+				
+				pressureData.setHistoryInterval(interval);
+				preferences.setLoggingInterval(interval);				
+			}
+		});
+    	AlertDialog alert = builder.create();
+    	alert.show();
+    }
+    
     private void initializeGraph() {
     	XYPlot plot = (XYPlot)this.findViewById(R.id.mySimpleXYPlot);
     	if (plot != null) {
@@ -270,6 +297,13 @@ public class PressureMonitor extends Activity
     		plot.getBackgroundPaint().setColor(Color.rgb(30, 30, 30));
     		plot.getBorderPaint().setColor(Color.rgb(150, 150, 150));
     		plot.getBorderPaint().setStrokeWidth(3);
+    		
+    		plot.setOnClickListener(new View.OnClickListener() {
+    			public void onClick(View v) {
+    				Toast.makeText(getApplicationContext(), "Disable?", Toast.LENGTH_LONG);
+    			}
+    		});
+    		
     	} else {
     		AlertDialog alertDialog = new AlertDialog.Builder(this).create();
     		alertDialog.setTitle("Graphics");

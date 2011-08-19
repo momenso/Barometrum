@@ -15,6 +15,7 @@ public class Preferences {
 
 	private PressureMode pressureMode;
 	private PressureUnit pressureUnit;
+	private Integer loggingInterval;
 	private Context context;
 	
 	public Preferences(Context context) {
@@ -43,15 +44,25 @@ public class Preferences {
 		return this.pressureUnit;
 	}
 	
-    private void savePreferences() {
+    public Integer getLoggingInterval() {
+		return loggingInterval;
+	}
+
+	public void setLoggingInterval(Integer loggingInterval) {
+		this.loggingInterval = loggingInterval;
+	}
+
+	private void savePreferences() {
     	try {
     		FileOutputStream fos = context.openFileOutput("preferences", Context.MODE_PRIVATE);
     		ObjectOutputStream os = new ObjectOutputStream(fos);
     		os.writeObject(pressureMode);
     		os.writeObject(pressureUnit);
+    		os.writeObject(loggingInterval);
 		} catch (IOException e) { }
     }
     
+    // TODO: make it so that when a parameter reading fails, load the default (just for the one)
     private void restorePreferences() {
     	try {
     		FileInputStream fis = context.openFileInput("preferences");
@@ -67,12 +78,18 @@ public class Preferences {
     			pressureUnit = (PressureUnit)item;
     		}
     		
+    		item = is.readObject();
+    		if (item instanceof Integer) {
+    			loggingInterval = (Integer)item;
+    		}
+    		
     		return;
     		
     	} catch (Exception ex) { }
     	
     	pressureMode = PressureMode.BAROMETRIC;
     	pressureUnit = PressureUnit.Bar;
+    	loggingInterval = 60000;
     }
 
 }
