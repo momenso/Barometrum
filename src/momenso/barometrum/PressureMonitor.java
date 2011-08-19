@@ -143,8 +143,9 @@ public class PressureMonitor extends Activity
 	protected void onPause() {
 		super.onPause();
 		
-		//altimeter.disable();
-		//barometer.disable();
+		// disable sensors when leaving the activity
+		altimeter.disable();
+		barometer.disable();
 		
 		pressureData.saveReadings();
 	}
