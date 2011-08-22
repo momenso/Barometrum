@@ -16,15 +16,15 @@ public class Barometer extends Observable implements SensorEventListener {
 	private Context context;
 	//private long startReadingTime;
 	private boolean isSensorActive;
-	private Timer workerThread;
+	private Timer workerTimer;
 	
 	public Barometer(Context context) {
 		this.context = context;
 		this.isSensorActive = false;
 		//this.startReadingTime = 0;
 		
-		workerThread = new Timer();
-		workerThread.schedule(new TimerTask() { 
+		workerTimer = new Timer();
+		workerTimer.schedule(new TimerTask() { 
 			@Override
 			public void run() {
 				active();

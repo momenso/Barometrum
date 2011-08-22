@@ -11,14 +11,20 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.Align;
 import android.graphics.Paint.Style;
+import android.graphics.Path;
+import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.util.AttributeSet;
+import android.view.MotionEvent;
+import android.view.MotionEvent.PointerCoords;
 import android.widget.TextView;
 
 public class ChartView extends TextView {
 	
 	private ReadingsData data;
+	private Point selectedSpot = new Point();
+	private int selectedBar = 0;
 	
 	public ChartView(Context context) {
 		super(context);
@@ -93,27 +99,51 @@ public class ChartView extends TextView {
 		
 		// draw data columns
 		List<PressureDataPoint> values = data.getHistory();
-		paint.setTextSize((getTextSize() * 5) / 6);
+		paint.setAntiAlias(true);
 		int columnWidth = ((rect.width() - 20) / values.size()) / 1;
 		int xPos = rect.left + 10 + columnWidth / 2;
+		int yValue = values.size();
 		for (PressureDataPoint bar : values) {
 			Rect barRect = new Rect(xPos - 10, 
 				convertY(bar.getRawValue(), minimum, maximum, rect.height() - 48) + 25, 
 				xPos + 10, rect.bottom - 23);
-			paint.setColor(Color.rgb(20, 180, 20));
+			
+			if (barRect.contains(selectedSpot.x, selectedSpot.y)) {
+				selectedBar = yValue;
+				selectedSpot.set(0, 0);
+			}
+			
+			/*if (selectedBar == yValue) {
+				paint.setColor(Color.rgb(180, 180, 20));
+			} else {*/
+				paint.setColor(Color.rgb(20, 180, 20));
+			//}
+			
 			canvas.drawRect(barRect, paint);
 			
 			paint.setColor(Color.WHITE);
-			Date date = new Date(bar.getTime());
-			String label = String.format("%02d:%02d", date.getHours(), date.getMinutes());
+			paint.setTextAlign(Align.CENTER);
+			paint.setTextSize((getTextSize() * 5) / 6);
+			//Date date = new Date(bar.getTime());
+			//String label = String.format("%02d:%02d", date.getHours(), date.getMinutes());
 			//String label = String.format("%dh", date.getHours());
-			canvas.drawText(label, barRect.centerX(), rect.bottom - 7, paint);
+			canvas.drawText(String.valueOf(yValue), barRect.centerX(), rect.bottom - 7, paint);
 			
 			// display pressure value
-			//String value = String.format("%.2f", Math.round(ReadingsData.getReadingValue(bar) * 100.0) / 100.0);
+			/*Path path = new Path();
+			int h = (int)(paint.getFontMetrics().top - paint.getFontMetrics().bottom); 
+			path.moveTo(barRect.centerX() + h / 2, barRect.top + 10);
+			path.lineTo(barRect.centerX() + h / 2, barRect.bottom);
+			String value = String.format("%.2f", Math.round(ReadingsData.getReadingValue(bar) * 100.0) / 100.0);
+			paint.setColor(Color.WHITE);
+			paint.setTextAlign(Align.LEFT);
+			paint.setTextSize(getTextSize());
+			canvas.drawTextOnPath(value, path, 0, 0, paint);*/
+			
 			//canvas.drawText(value, barRect.centerX(), barRect.top - 5, paint);
 			
 			xPos += columnWidth;
+			yValue--;
 		}
 	}
 	
@@ -125,6 +155,19 @@ public class ChartView extends TextView {
 		//	String.format("ConvertY(%.2f,%.2f,%.2f,%d) = %d ", value, min, max, height, y));
 		
 		return y;
+	}
+	
+	@Override
+	public boolean onTouchEvent(MotionEvent event) {
+
+		PointerCoords coords = new PointerCoords();
+		event.getPointerCoords(0, coords);
+		
+		selectedSpot.x = (int) coords.x;
+		selectedSpot.y = (int) coords.y;
+		
+		
+		return super.onTouchEvent(event);
 	}
 	
 	/*

@@ -329,10 +329,10 @@ public class PressureMonitor extends Activity
 			            Color.TRANSPARENT);   // fill color (optional)
 			plot.addSeries(pressureSeries, pressureLineFormat);
 			
-			plot.setRangeBoundaries(
+			/*plot.setRangeBoundaries(
 					pressureData.getMinimum() - 0.2, 
 					pressureData.getMaximum() + 0.2, 
-					BoundaryMode.FIXED);
+					BoundaryMode.FIXED);*/
 
 			plot.redraw();
     	}

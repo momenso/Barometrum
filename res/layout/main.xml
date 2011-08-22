@@ -71,7 +71,7 @@
 		    android:layout_marginLeft="10px"
 		    android:layout_marginRight="10px"
 		    android:layout_height="238px"
-		    title="Barometric Pressure" android:layout_weight="1" android:layout_width="600px"/>
+		    title="Live Barometric Pressure" android:layout_weight="1" android:layout_width="600px"/>
 		<!-- arrow was here
 		<ImageView 
 			android:id="@+id/arrowImage" 
