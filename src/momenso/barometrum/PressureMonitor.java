@@ -210,23 +210,26 @@ public class PressureMonitor extends Activity
     }
     
     private void selectPressureUnit() {
-    	final CharSequence[] items = { "Bar", "Torr", "Pascal" };
+    	final CharSequence[] items = { "Bar", "Inches of Mercury", "Torr", "Pascal" };
     	
     	AlertDialog.Builder builder = new AlertDialog.Builder(this);
     	builder.setTitle("Pressure Unit");
     	builder.setItems(items, new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int item) {
 				//Toast.makeText(getApplicationContext(), items[item], Toast.LENGTH_SHORT).show();
-						        
+				
 				if (item == 0) {
 					pressureData.setUnit(PressureUnit.Bar);
 					preferences.setPressureUnit(PressureUnit.Bar);
 				} else if (item == 1) {
+					pressureData.setUnit(PressureUnit.InHg);
+					preferences.setPressureUnit(PressureUnit.InHg);
+				} else if (item == 2) {
 					pressureData.setUnit(PressureUnit.Torr);
 					preferences.setPressureUnit(PressureUnit.Torr);
-				} else if (item == 2) {
+				} else if (item == 3) {
 					pressureData.setUnit(PressureUnit.Pascal);
-					preferences.setPressureUnit(PressureUnit.Pascal);
+					preferences.setPressureUnit(PressureUnit.Pascal);					
 				}
 				
 		        BlockView maxReading = (BlockView) findViewById(R.id.maximumReading);

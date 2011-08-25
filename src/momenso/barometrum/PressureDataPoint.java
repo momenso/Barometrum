@@ -3,11 +3,13 @@ package momenso.barometrum;
 import java.io.Serializable;
 import java.util.Date;
 
+import android.util.Log;
+
 
 public class PressureDataPoint implements Serializable {
 
 	public static enum PressureMode { BAROMETRIC, MSLP };
-	public static enum PressureUnit { Bar, Torr, Pascal };
+	public static enum PressureUnit { Bar, Torr, Pascal, InHg };
 
 	private static final long serialVersionUID = -3959936631531969908L;
 	private float value;
@@ -66,6 +68,10 @@ public class PressureDataPoint implements Serializable {
 		return bar / 10; 
 	}
 	
+	private float convertToInHg(float bar) {
+		return bar / 33.86389F;
+	}
+	
 	private float getPressure(PressureMode mode, PressureUnit unit, float elevation, float rawValue) {
 		float value = 0;
 		
@@ -84,6 +90,8 @@ public class PressureDataPoint implements Serializable {
 			value = convertToKiloPascal(value);
 		} else if (unit == PressureUnit.Torr) {
 			value = convertToTorr(value);
+		} else if (unit == PressureUnit.InHg) {
+			value = convertToInHg(value);
 		}
 
 		return value;

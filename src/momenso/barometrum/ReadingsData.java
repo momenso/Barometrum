@@ -297,6 +297,9 @@ public class ReadingsData {
 			case Pascal:
 				return "kPa";
 				
+			case InHg:
+				return "inHg";
+				
 			default:
 				return "mb";
 		}

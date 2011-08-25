@@ -24,7 +24,7 @@ public class ChartView extends TextView {
 	
 	private ReadingsData data;
 	private Point selectedSpot = new Point();
-	private int selectedBar = 0;
+	//private int selectedBar = 0;
 	
 	public ChartView(Context context) {
 		super(context);
@@ -108,10 +108,10 @@ public class ChartView extends TextView {
 				convertY(bar.getRawValue(), minimum, maximum, rect.height() - 48) + 25, 
 				xPos + 10, rect.bottom - 23);
 			
-			if (barRect.contains(selectedSpot.x, selectedSpot.y)) {
+			/*if (barRect.contains(selectedSpot.x, selectedSpot.y)) {
 				selectedBar = yValue;
 				selectedSpot.set(0, 0);
-			}
+			}*/
 			
 			/*if (selectedBar == yValue) {
 				paint.setColor(Color.rgb(180, 180, 20));
@@ -156,7 +156,7 @@ public class ChartView extends TextView {
 		
 		return y;
 	}
-	
+	/*
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
 
@@ -166,9 +166,8 @@ public class ChartView extends TextView {
 		selectedSpot.x = (int) coords.x;
 		selectedSpot.y = (int) coords.y;
 		
-		
 		return super.onTouchEvent(event);
-	}
+	}*/
 	
 	/*
 	private PressureDataPoint[] sample = {
